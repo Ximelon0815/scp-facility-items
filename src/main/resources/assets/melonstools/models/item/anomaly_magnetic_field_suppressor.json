@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "melonstools:item/anomaly_magnetic_field_suppressor"
+  }
+}

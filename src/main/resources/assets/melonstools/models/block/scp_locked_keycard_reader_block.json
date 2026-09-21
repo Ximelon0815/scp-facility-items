@@ -1,0 +1,10 @@
+﻿{
+  "parent": "melonstools:custom/locked_card_reader",
+  "textures": {
+    "all": "melonstools:block/card_reader_body",
+    "particle": "melonstools:block/card_reader_body",
+    "0": "melonstools:block/card_reader_body",
+    "1": "melonstools:block/red"
+  },
+  "render_type": "cutout"
+}

@@ -1,0 +1,368 @@
+<!-- AUI-snow(1.2.x): 解析器会自动合成 html/head/body; 无需 DOCTYPE, meta 会被读取(旧 1.1.6 才要求禁止 DOCTYPE) -->
+<meta charset="UTF-8">
+<!-- 难点: 采用成功案例(电脑终端)模式——viewport 640x360, scale=fit 接近 1:1,
+     文本无需 CSS 放大就清晰。之前 1200x700 缩放到 0.5x 导致文本小模糊。
+     2026-08 内容缩放方案: meta zoom=0.667 把内容缩到 2/3(缩小 1/3), phone.css
+     同步把外框 device/tablet 逻辑尺寸放大 1.5 倍补偿 → 视觉外框不变、内容缩小。
+     AUI viewport zoom 参与命中测试映射(renderScale 含 zoom), 点击精确; 浏览器
+     预览不解析 meta, 由 phone.css 里 .device 的 CSS zoom:0.667 模拟(游戏内忽略)。 -->
+<meta name="aui-viewport" content="mode=fixed,width=640,height=360,scale=fit,zoom=0.667">
+<meta name="aui-mouse-events" content="intercept">
+<title>个人终端</title>
+<!-- 网页预览用相对路径;正式接入 AUI 时可改为 href="/apricityui/theme/ore/ore.css" 使用游戏内置主题 -->
+<link rel="stylesheet" href="ore.css">
+<link rel="stylesheet" href="phone.css">
+<body class="ore-theme phone-body">
+
+  <div class="phone-stage">
+    <!-- 平板设备(厚实外壳工控机身) -->
+    <div class="device">
+      <div class="device-notch"><span class="device-cam"></span></div>
+      <div class="tablet">
+      <!-- 系统栏 -->
+      <div class="sys-bar">
+        <span class="sys-brand">个人终端</span>
+        <span class="sys-meta">
+          <span class="sys-dot"></span>
+          <span id="sysTime" class="sys-time">12:00</span>
+        </span>
+      </div>
+
+      <div class="tablet-body">
+        <!-- 侧边导航 -->
+        <nav class="side-nav">
+          <button class="side-item side-active" data-goto="home"><span class="side-glyph">⌂</span><span class="side-label">主屏</span></button>
+          <button class="side-item" data-goto="comm"><span class="side-glyph">✉<span class="nav-badge" id="commBadge"></span></span><span class="side-label">通讯</span></button>
+          <button class="side-item" data-goto="log"><span class="side-glyph">☑</span><span class="side-label">日志</span></button>
+          <button class="side-item" data-goto="dept"><span class="side-glyph">⚙</span><span class="side-label">部门</span></button>
+          <button class="side-item" data-goto="fun"><span class="side-glyph">⚄</span><span class="side-label">娱乐</span></button>
+        </nav>
+
+        <!-- 内容区 -->
+        <div class="content-area">
+          <!-- 主屏 -->
+          <div id="page-home" class="page page-home">
+            <!-- 背景装饰(科技感水印/取景框/网格线) -->
+            <div class="home-bg">
+              <span class="bg-symbol">Λ</span>
+              <span class="bg-corner bg-corner-tl"></span>
+              <span class="bg-corner bg-corner-tr"></span>
+              <span class="bg-corner bg-corner-bl"></span>
+              <span class="bg-corner bg-corner-br"></span>
+              <span class="bg-line bg-line-v bg-line-v-1"></span>
+              <span class="bg-line bg-line-v bg-line-v-2"></span>
+              <span class="bg-line bg-line-v bg-line-v-3"></span>
+              <span class="bg-line bg-line-v bg-line-v-4"></span>
+              <span class="bg-line bg-line-v bg-line-v-5"></span>
+              <span class="bg-line bg-line-v bg-line-v-6"></span>
+              <span class="bg-line bg-line-v bg-line-v-7"></span>
+              <span class="bg-line bg-line-h bg-line-h-1"></span>
+              <span class="bg-line bg-line-h bg-line-h-2"></span>
+              <span class="bg-line bg-line-h bg-line-h-3"></span>
+              <span class="bg-line bg-line-h bg-line-h-4"></span>
+            </div>
+            <!-- 顶部:左右分栏(左:时钟/统计,右:玩家信息) -->
+            <div class="home-top">
+              <div class="home-left">
+                <div id="homeTime" class="home-time">12:00</div>
+                <div class="home-stats">
+                  <div class="stat stat-task">
+                    <div class="stat-head">
+                      <span class="stat-label">今日任务</span>
+                      <span class="stat-num" id="statLog">0/0</span>
+                    </div>
+                    <div class="stat-track"><div class="stat-fill" id="statFill" style="width:0%"></div></div>
+                    <span class="stat-hint">完成部门任务领取奖励</span>
+                  </div>
+                </div>
+              </div>
+              <div class="home-side">
+                <!-- 玩家数据卡(同一框内:ID/部门/职位/余额) -->
+                <div class="home-player-card">
+                  <div class="player-card-top">
+                    <span class="player-kicker">用户</span>
+                  </div>
+                  <span class="player-id" id="playerId">---</span>
+                  <div class="player-divider"></div>
+                  <span class="player-kicker">部门</span>
+                  <span class="player-dept" id="playerDept">---</span>
+                  <div class="player-divider"></div>
+                  <span class="player-kicker">职位</span>
+                  <span class="player-position" id="playerPosition">---</span>
+                  <div class="player-divider"></div>
+                  <span class="player-kicker">余额</span>
+                  <span class="player-balance" id="playerBalance">0</span>
+                </div>
+              </div>
+            </div>
+            <!-- 重要消息 -->
+            <div class="home-important">
+              <div class="imp-head">
+                <span class="imp-title">重要消息</span>
+                <span id="impCount" class="ctrl-tag ctrl-tag-red">0</span>
+              </div>
+              <div id="importantList" class="imp-list"></div>
+            </div>
+          </div>
+
+          <!-- 通讯板块 -->
+          <div id="page-comm" class="page page-hidden">
+            <div class="page-head">
+              <div class="head-text">
+                <div class="head-title">通讯</div>
+              </div>
+              <div class="comm-tabs">
+                <button class="comm-tab comm-tab-active" data-comm-tab="contacts">联系人</button>
+                <button class="comm-tab" data-comm-tab="nearby">附近</button>
+                <button class="comm-tab" data-comm-tab="rooms">群聊</button>
+              </div>
+            </div>
+            <div class="page-content">
+              <!-- 联系人 -->
+              <div id="comm-contacts" class="comm-panel">
+                <div class="panel-actions">
+                  <span class="panel-kicker">联系人</span>
+                  <button class="head-btn" id="btnGotoNearby">+ 添加好友</button>
+                </div>
+                <div id="requestSection" class="section section-hidden">
+                  <div class="section-head">好友请求<span id="requestCount" class="ctrl-tag ctrl-tag-red">0</span></div>
+                  <div id="requestList" class="ctrl-list"></div>
+                </div>
+                <div class="section">
+                  <div class="section-head">好友列表<span id="friendCount" class="ctrl-tag">0</span></div>
+                  <div id="friendList" class="ctrl-list"></div>
+                </div>
+              </div>
+              <!-- 附近 -->
+              <div id="comm-nearby" class="comm-panel comm-panel-hidden">
+                <div class="panel-actions">
+                  <span class="panel-kicker">附近</span>
+                  <button class="head-btn" id="btnRefreshNearby">刷新</button>
+                </div>
+                <p class="page-hint">扫描半径 10 格 · 显示未添加的玩家</p>
+                <div id="nearbyList" class="ctrl-list"></div>
+              </div>
+              <!-- 群聊 -->
+              <div id="comm-rooms" class="comm-panel comm-panel-hidden">
+                <div class="panel-actions">
+                  <span class="panel-kicker">群聊</span>
+                  <div class="head-actions">
+                    <button class="head-btn" id="btnJoinRoom">+ 加入频道</button>
+                    <button class="head-btn" id="btnNewRoom">+ 新建频道</button>
+                  </div>
+                </div>
+                <div id="roomList" class="ctrl-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 聊天室 -->
+          <div id="page-chat" class="page page-hidden">
+            <div class="page-head page-head-chat">
+              <div class="head-text">
+                <div class="head-title" id="chatTitle">群聊</div>
+              </div>
+              <div class="head-actions">
+                <button class="head-btn" id="btnToggleMembers">成员</button>
+                <button class="head-btn hidden" id="btnRoomSettings">设置</button>
+                <button class="head-btn" id="btnBackToRooms">← 返回群聊</button>
+              </div>
+            </div>
+            <div class="chat-main">
+              <div id="chatMessages" class="chat-messages"></div>
+              <div class="chat-members chat-members-hidden">
+                <div class="members-head">成员 <span id="memberCount" class="ctrl-tag">0</span><button class="member-invite hidden" id="btnInviteMember">邀请</button></div>
+                <div id="memberList"></div>
+              </div>
+            </div>
+            <div class="chat-inputbar">
+              <input id="chatInput" class="chat-input" type="text" maxlength="200" placeholder="输入消息...">
+              <button id="btnSendMsg" class="chat-send">发送</button>
+            </div>
+          </div>
+
+          <!-- 部门 -->
+          <div id="page-dept" class="page page-hidden">
+            <div class="page-head">
+              <div class="head-text">
+                <div class="head-title">部门</div>
+              </div>
+              <span class="dept-badge" id="deptCurrentBadge">---</span>
+            </div>
+            <div class="page-content">
+              <div id="researchWorkShell" class="dept-extend">
+                <div class="dept-extend-hint">科研工作容器 / MY RESEARCH WORK</div>
+              </div>
+              <div id="deptBody"></div>
+            </div>
+          </div>
+
+          <!-- 娱乐 -->
+          <div id="page-fun" class="page page-hidden">
+            <div class="page-head">
+              <div class="head-text">
+                <div class="head-title">娱乐</div>
+                <div class="head-sub">单机小游戏 · 提升排行领取每日奖励</div>
+              </div>
+            </div>
+            <div class="page-content">
+              <div class="game-grid" id="gameList"></div>
+            </div>
+          </div>
+
+          <!-- 游戏页 -->
+          <div id="page-game" class="page page-hidden">
+            <div class="page-head">
+              <div class="head-text">
+                <div class="head-title" id="gameTitle">游戏</div>
+              </div>
+              <div class="head-actions">
+                <button class="head-btn" id="btnLeaderboard">排行榜</button>
+                <button class="head-btn" id="btnBackToFun">← 返回娱乐</button>
+              </div>
+            </div>
+            <div class="diff-tabs">
+              <button class="diff-tab" data-diff="easy">简单</button>
+              <button class="diff-tab diff-tab-active" data-diff="normal">普通</button>
+              <button class="diff-tab" data-diff="hard">困难</button>
+            </div>
+            <div class="page-content game-content">
+              <div id="gameBody">
+                <!-- 难点: AUI 的 document.createElement("canvas") 只返回普通 Element,
+                     没有 getContext/setWidth,只有 HTML 解析时的 <canvas> 标签才会被
+                     Element.init() 替换为 Canvas 类,因此这里必须静态声明,JS 再取引用 -->
+                <canvas id="snakeCanvas" class="snake-canvas" width="224" height="224"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- 工作日志 -->
+          <div id="page-log" class="page page-hidden">
+            <div class="page-head">
+              <div class="head-text">
+                <div class="head-title">工作日志</div>
+              </div>
+              <span class="log-date" id="logDate">08.13</span>
+            </div>
+            <div class="page-content">
+              <div class="log-overview">
+                <div class="log-overview-text">
+                  <span class="log-kicker">今日进度</span>
+                  <span class="log-progress-num"><span id="logDone">0</span> / <span id="logTotal">0</span></span>
+                </div>
+                <div class="log-progress-track">
+                  <div class="log-progress-fill" id="logProgressFill" style="width:0%"></div>
+                </div>
+                <span class="log-refresh-hint" id="logDeptHint">每日 06:00 刷新任务清单</span>
+              </div>
+              <div id="taskList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建群聊 -->
+  <div class="modal-backdrop" id="newRoomModal">
+    <div class="modal-dismiss" data-close="newRoomModal"></div>
+    <div class="ctrl-modal">
+      <div class="modal-head">新建群聊频道</div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label class="modal-label" for="roomNameInput">群聊名称</label>
+          <input class="modal-input" id="roomNameInput" type="text" maxlength="16" placeholder="输入名称">
+        </div>
+        <div class="modal-help">需要 ID 卡等级 ≥ 3</div>
+      </div>
+      <div class="modal-foot">
+        <button class="modal-btn modal-btn-ghost" data-close="newRoomModal">取消</button>
+        <button class="modal-btn modal-btn-primary" id="btnCreateRoom">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 群聊设置 -->
+  <div class="modal-backdrop" id="roomSettingsModal">
+    <div class="modal-dismiss" data-close="roomSettingsModal"></div>
+    <div class="ctrl-modal">
+      <div class="modal-head">群聊设置</div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label class="modal-label" for="renameInput">群聊名称</label>
+          <input class="modal-input" id="renameInput" type="text" maxlength="16" placeholder="输入新名称">
+        </div>
+        <div class="modal-help">解散后所有成员将被移出群聊</div>
+      </div>
+      <div class="modal-foot modal-foot-split">
+        <button class="modal-btn modal-btn-danger" id="btnDissolveRoom">解散群聊</button>
+        <span class="foot-spacer"></span>
+        <button class="modal-btn modal-btn-ghost" data-close="roomSettingsModal">关闭</button>
+        <button class="modal-btn modal-btn-primary" id="btnConfirmRename">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 加入群聊频道 -->
+  <div class="modal-backdrop" id="joinRoomModal">
+    <div class="modal-dismiss" data-close="joinRoomModal"></div>
+    <div class="ctrl-modal">
+      <div class="modal-head">加入群聊频道</div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label class="modal-label" for="joinRoomInput">频道名称</label>
+          <input class="modal-input" id="joinRoomInput" type="text" maxlength="16" placeholder="输入频道名称">
+        </div>
+        <div class="modal-help" id="joinRoomHelp">输入准确的频道名称加入</div>
+      </div>
+      <div class="modal-foot">
+        <button class="modal-btn modal-btn-ghost" data-close="joinRoomModal">取消</button>
+        <button class="modal-btn modal-btn-primary" id="btnConfirmJoin">加入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 邀请好友入群 -->
+  <div class="modal-backdrop" id="inviteModal">
+    <div class="modal-dismiss" data-close="inviteModal"></div>
+    <div class="ctrl-modal">
+      <div class="modal-head">邀请好友加入</div>
+      <div class="modal-body">
+        <div id="inviteList" class="ctrl-list"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="modal-btn modal-btn-ghost" data-close="inviteModal">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全服排行榜 -->
+  <div class="modal-backdrop" id="leaderboardModal">
+    <div class="modal-dismiss" data-close="leaderboardModal"></div>
+    <div class="ctrl-modal">
+      <div class="modal-head">全服排行榜<span id="lbTitle"></span></div>
+      <div class="modal-body">
+        <div id="lbList"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="modal-btn modal-btn-ghost" data-close="leaderboardModal">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- phone-stage 闭合:device/tablet 在 256 行已闭合,此处补上 stage 收尾 -->
+  </div>
+
+  <!-- 注:游戏内版本会额外包含 phoneData / melonActionQueue 桥接元素,网页预览版不含 -->
+  <!-- 探针:确认内联 script 是否执行(对照外部 phone.js) -->
+  <script>document.body.setAttribute("data-inline-probe", "1");</script>
+</body>
+<!-- 难点:参照电脑终端成功案例——不隐藏 body,页面渲染即显示。
+     之前用 visibility:hidden + phone-ready 恢复,导致打开瞬间闪烁裸文本+滚动条。
+     AUI 是一次性解析渲染,无需隐藏防闪烁。phone-ready 规则保留作冗余兼容。 -->
+<style>
+  body { visibility: visible; }
+  body.phone-ready { visibility: visible; }
+</style>
+<script src="phone.js"></script>
+

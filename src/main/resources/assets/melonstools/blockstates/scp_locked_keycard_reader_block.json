@@ -1,0 +1,8 @@
+﻿{
+  "variants": {
+    "facing=north": { "model": "melonstools:block/scp_locked_keycard_reader_block" },
+    "facing=south": { "model": "melonstools:block/scp_locked_keycard_reader_block", "y": 180 },
+    "facing=west":  { "model": "melonstools:block/scp_locked_keycard_reader_block", "y": 270 },
+    "facing=east":  { "model": "melonstools:block/scp_locked_keycard_reader_block", "y": 90 }
+  }
+}

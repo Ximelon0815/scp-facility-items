@@ -1,0 +1,42 @@
+<!-- AUI 测试页: 严格仿照电脑终端(成功案例) gui.html 的结构
+     结构: 无 DOCTYPE/html/head, meta 开头, body, </body> 后放 style + script
+     作用: 隔离变量, 确认 AUI 1.1.9.3 对 script 位置的真实行为
+     平板尺寸: 1200x700 (与手机页面 viewport 一致) -->
+<meta charset="UTF-8">
+<meta name="aui-viewport" content="mode=fixed,width=1200,height=700,scale=fit">
+<meta name="aui-font-mode" content="web">
+<meta name="aui-mouse-events" content="intercept">
+<title>AUI 测试页</title>
+<body style="margin:0;background:#101418;color:#ffffff;font-family:sans-serif;">
+  <div style="padding:48px;">
+    <h1 style="font-size:38px;margin:0 0 8px 0;">AUI 测试页面</h1>
+    <p style="font-size:20px;color:#9fb4c8;margin:0 0 32px 0;">验证 AUI 基础显示 + script 位置(静态内容,不依赖任何脚本)</p>
+
+    <div id="status" style="padding:18px;background:#1b222b;border:2px solid #2c3a48;font-size:20px;border-radius:6px;">
+      等待脚本执行...
+    </div>
+
+    <div style="margin-top:24px;font-size:15px;color:#7f92a5;line-height:1.7;">
+      <div>- 页面本身可见 &rarr; 说明 HTML/CSS 渲染正常(不是白屏)</div>
+      <div>- 下方状态文字变化 &rarr; 说明对应位置的 script 被执行</div>
+      <div>- 可通过 AUI 调试协议查询 body 的 data-inline / data-tail 属性</div>
+    </div>
+  </div>
+
+  <!-- 标记 A: body 内 script -->
+  <script>
+    document.body.setAttribute("data-inline", "1");
+    var s = document.getElementById("status");
+    if (s) s.textContent = "[INLINE] body 内 script 已执行";
+  </script>
+</body>
+<!-- 照抄电脑终端成功案例: style / script 放 </body> 后面 -->
+<style>
+  body { margin: 0; }
+</style>
+<!-- 标记 B: body 后 script -->
+<script>
+  document.body.setAttribute("data-tail", "1");
+  var s = document.getElementById("status");
+  if (s) s.textContent = "[TAIL] body 后 script 已执行";
+</script>

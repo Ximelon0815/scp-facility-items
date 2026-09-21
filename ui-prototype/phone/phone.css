@@ -1,0 +1,2596 @@
+/* ============================================================
+   MELON OS 通讯终端 - Control 风格界面
+   粗野主义极简:混凝土灰/深黑/红色强调/细线/方角/大留白
+   依赖 ore.css 仅作基础重置,本文件定义全部外观
+   ============================================================ */
+.research-work-card { border-left: 3px solid rgba(130, 190, 255, 0.75); }
+.research-maint-card { border-left: 3px solid rgba(255, 120, 95, 0.85); }
+.mini-action { margin-top: 8px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.22); border-radius: 10px; background: rgba(120,170,255,0.18); color: #fff; font-weight: 700; box-sizing: border-box; }
+
+/* ---- 科技感简约色板(混凝土灰 · Control 粗野主义) ---- */
+.phone-body {
+  --c-bg: transparent;
+  --c-shell: #1d1d1f;
+  --c-screen: #2c2c2f;
+  --c-panel: #3b3b3e;
+  --c-panel-2: #2c2c2f;
+  --c-line: #525256;
+  --c-line-2: #6a6a6e;
+  --c-ink: #f2f0ea;
+  --c-muted: #a8a6a0;
+  --c-faint: #6a6a6e;
+  --c-red: #c22f2f;
+  --c-red-soft: rgba(194, 47, 47, 0.12);
+  --c-red-line: rgba(194, 47, 47, 0.5);
+}
+
+/* 视口根元素禁止滚动:引擎对 html/视口 overflow:visible 也允许滚动,
+   滚轮会滚动整个页面(导致画面偏移)。仅 body 设 hidden 不够,必须连 html 一起禁 */
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 覆盖 Ore 的 body 基础样式 */
+/* 难点: 双击/拖拽会触发 AUI 文档级文本选择,出现蓝色选择框(#0078D7)。
+   user-select 是非继承属性, AUI 的 getUserSelect 从元素向上找第一个非 unset 的值,
+   中间元素(.ms-grid 等)computed 默认是 auto, 遍历到中间就停, 到不了 body 的 none,
+   导致 resolveUnit 把数字所在父级当作可选单元而选中。
+   必须用 * 通配符让所有元素自身都是 none, 任何元素向上都找不到可选单元 */
+body.phone-body, body.phone-body * {
+  user-select: none;
+}
+
+body.phone-body {
+  margin: 0;
+  background: transparent;
+  height: 100vh;
+  overflow: hidden;
+  font-family: "Consolas", "Courier New", "Microsoft YaHei", monospace;
+  color: var(--c-ink);
+}
+
+/* 难点:AUI 引擎给 body 注入 visibility:hidden,页面 JS 的 showPhone() 加 phone-ready 类后必须恢复可见,
+   否则整个界面被隐藏只露出白条。浏览器预览中 body 默认可见,无此问题 */
+body.phone-body.phone-ready {
+  visibility: visible !important;
+}
+
+body.phone-body button {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  margin: 0;
+}
+
+body.phone-body input {
+  font-family: inherit;
+}
+
+/* ---- 舞台 ---- */
+/* 舞台:平板居中,四周透明留白露出游戏画面 */
+/* 难点(2026-08-17): 之前 stage 有 padding:20px, 但 AUI 的 width:100% 是 content-box 语义,
+   stage 的 content 区域相对 body 偏移 padding 值, 导致平板整体偏右下约 20px(游戏内实测
+   body 中心 309,174 vs 平板中心 328,197)。必须 padding:0, 靠 viewport 自身的留白居中。 */
+.phone-stage {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+}
+
+/* ---- 平板设备(厚实外壳工控机身) ---- */
+/* 难点(2026-08 内容缩放): index.html 的 aui-viewport meta 加了 zoom=0.667(内容缩到 2/3),
+   渲染时整体 ×0.667。为保持"外框视觉尺寸不变",此处把 device/tablet 逻辑尺寸放大 1.5 倍
+   补偿(500→750 等), 内部字号/图标不动 → 视觉外框不变、内容缩小 1/3。
+   zoom 属性仅供浏览器预览模拟(浏览器支持 CSS zoom, AUI 忽略未知属性 zoom, 游戏内无副作用)。 */
+.device {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #141416;
+  padding: 12px;
+  /* 难点(2026-08-21): 旧版 AUI 1.1.6 的圆角边框绘制(Graph.drawComplexRoundedBorder)
+     无限生成顶点导致渲染线程挂起(AppHangB1)。升级到 1.2.3 后已改为固定 SEGMENTS=12
+     预计算表绘制,圆角/阴影可安全使用。 */
+  border-radius: 21px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  zoom: 0.667; /* 浏览器预览模拟 AUI viewport zoom, AUI 游戏内忽略 */
+}
+
+/* 平板顶部:前置摄像头(设备细节) */
+.device-notch {
+  height: 7.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 3px;
+}
+
+.device-cam {
+  width: 4.5px;
+  height: 4.5px;
+  background: #1d1d1f;
+  border: 1.5px solid #525256;
+  border-radius: 50%;
+}
+
+/* ---- 平板屏幕(内嵌机身,实体不透明) ---- */
+.tablet {
+  width: 750px;
+  height: 450px;
+  max-width: 100%;
+  max-height: 100%;
+  background: #2c2c2f;
+  border: 1.5px solid #3b3b3e;
+  border-radius: 13.5px;
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  /* 视口缩放由 aui-viewport meta(zoom=0.667)统一处理, 此处不再用 CSS zoom */
+}
+
+.tablet-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* ---- 系统栏 ---- */
+.sys-bar {
+  flex: 0 0 32px;
+  height: 32px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 1px solid var(--c-line);
+  background: #2c2c2f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+.sys-brand {
+  color: var(--c-ink);
+  font-weight: 600;
+  letter-spacing: 0.28em;
+}
+
+.sys-brand-sub {
+  margin-left: 12px;
+  color: var(--c-muted);
+  font-weight: 400;
+  letter-spacing: 0.22em;
+}
+
+.sys-meta {
+  color: var(--c-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.14em;
+}
+
+.sys-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--c-red);
+  border-radius: 50%;
+}
+
+/* ---- 侧边导航 ---- */
+.side-nav {
+  flex: 0 0 88px;
+  width: 88px;
+  border: 0;
+  border-right: 1px solid var(--c-line);
+  background: #2c2c2f;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+}
+
+.side-item {
+  flex: 0 0 auto;
+  height: 78px;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--c-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  position: relative;
+}
+
+.side-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--c-ink);
+}
+
+.side-item.side-active {
+  border-left-color: var(--c-red);
+  background: var(--c-red-soft);
+  color: var(--c-ink);
+}
+
+.side-glyph {
+  font-size: 24px;
+  line-height: 1;
+  /* 红点覆盖层锚点:红点相对图标定位, 跟随图标右上角 */
+  position: relative;
+}
+
+.side-label {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+}
+
+/* 难点(2026-08-17): 红点移入图标内作为覆盖层(top/left 相对图标, 非按钮),
+   对齐图标右上角。旧版 AUI 圆角绘制会卡死渲染线程,1.2.3 已修复,可安全用 border-radius。 */
+.nav-badge {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  margin-left: -6px;
+  display: none;
+  min-width: 8px;
+  height: 8px;
+  padding: 0;
+  background: var(--c-red);
+  color: #fff;
+  font-size: 6px;
+  line-height: 8px;
+  text-align: center;
+  z-index: 4;
+  box-sizing: border-box;
+  border-radius: 50%;
+}
+
+.nav-badge.nav-badge-show {
+  display: block;
+}
+
+/* ---- 内容区 ---- */
+.content-area {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: #1d1d1f;
+  overflow: hidden;
+  display: flex;
+}
+
+.page {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 难点:#page-home 用 ID 选择器设了 display:flex,特异性高于 .page-hidden 的类选择器,
+   导致主页无法被隐藏(玩家信息栏/重要消息泄漏到其他页面)。必须 !important 覆盖 */
+.page-hidden {
+  display: none !important;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---- 页头 ---- */
+.page-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--c-line);
+}
+
+.page-head-chat {
+  border-bottom: 0;
+}
+
+.head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.head-kicker {
+  font-size: 9px;
+  letter-spacing: 0.34em;
+  color: var(--c-faint);
+}
+
+/* 页头标题下的介绍小字(位于分割线上方) */
+.head-sub {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--c-faint);
+}
+
+.head-title {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--c-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.head-btn {
+  border: 1px solid var(--c-line-2);
+  background: transparent;
+  color: var(--c-muted);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  padding: 5px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.head-btn:hover {
+  border-color: var(--c-red-line);
+  color: var(--c-ink);
+}
+
+/* 难点: 禁用态用 CSS :disabled 控制, 不要在 JS 里动态 setStyle opacity。
+   AUI 对运行期 opacity<1 会触发离屏合成(FilterPushNode)+绘制队列 REORDER,
+   实测点击刷新后按钮消失。静态 CSS opacity 走可靠渲染路径, 不会消失。 */
+.head-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.page-content {
+  flex: 1;
+  min-height: 0;
+  /* 难点: AUI 的 flex column 子元素不 stretch 到父宽(实测保持内容宽 750 超出平板),
+     width:100% 与 align-self:stretch 都不生效。显式设宽 = page 宽(750-侧边栏59=691),
+     必须 box-sizing:border-box 让总宽含 padding = 691, 否则 content-box 723 超平板。 */
+  width: 691px;
+  box-sizing: border-box;
+  align-self: stretch;
+  padding: 18px 22px 22px;
+  /* 难点: AUI 滚动条由引擎自绘, overflow-y: auto/scroll 才显示, 且无 CSS 属性可隐藏。
+     改 hidden: 滚动条消失, 滚动由 Java 侧 PhoneScrollController 接管(引擎 setScrollTop 缓动)
+     (它直接调 setScrollTop, 不依赖引擎 overflow 滚动判定)。 */
+  overflow-y: hidden;
+  overflow-x: hidden;
+}
+
+/* 隐藏滚动条(内容仍可滚动) */
+.page-content::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+.chat-members::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.page-hint {
+  margin: 0 0 14px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--c-faint);
+}
+
+/* ---- 主屏(仪表盘布局,一屏显示不滚动) ---- */
+#page-home {
+  /* 四角取景框占 8~24px 角落区, 内容内缩到 24px 内侧, 避免盖住边角 */
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ---- 主页背景装饰(科技感水印/取景框/网格线) ---- */
+.home-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 大三角水印(从 330px 缩小到 220px, 规避超大符号渲染卡顿风险) */
+.bg-symbol {
+  position: absolute;
+  right: 64px;
+  bottom: 2px;
+  font-size: 220px;
+  line-height: 1;
+  color: var(--c-red);
+  opacity: 0.12;
+  user-select: none;
+}
+
+/* 四角取景框标记 */
+.bg-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  opacity: 0.4;
+}
+.bg-corner-tl { top: 8px; left: 8px; border-top: 1px solid var(--c-red-line); border-left: 1px solid var(--c-red-line); }
+.bg-corner-tr { top: 8px; right: 8px; border-top: 1px solid var(--c-red-line); border-right: 1px solid var(--c-red-line); }
+.bg-corner-bl { bottom: 8px; left: 8px; border-bottom: 1px solid var(--c-red-line); border-left: 1px solid var(--c-red-line); }
+.bg-corner-br { bottom: 8px; right: 8px; border-bottom: 1px solid var(--c-red-line); border-right: 1px solid var(--c-red-line); }
+
+/* 网格细线 */
+.bg-line {
+  position: absolute;
+  background: var(--c-line);
+  opacity: 0.35;
+}
+.bg-line-v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+.bg-line-v-1 { left: 12.5%; }
+.bg-line-v-2 { left: 25%; }
+.bg-line-v-3 { left: 37.5%; }
+.bg-line-v-4 { left: 50%; }
+.bg-line-v-5 { left: 62.5%; }
+.bg-line-v-6 { left: 75%; }
+.bg-line-v-7 { left: 87.5%; }
+.bg-line-h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.bg-line-h-1 { top: 20%; }
+.bg-line-h-2 { top: 40%; }
+.bg-line-h-3 { top: 60%; }
+.bg-line-h-4 { top: 80%; }
+
+/* 内容层在装饰之上 */
+.home-top,
+.home-important {
+  position: relative;
+  z-index: 1;
+}
+
+/* 顶部:左右分栏(占主体) */
+.home-top {
+  display: flex;
+  gap: 28px;
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+
+/* 左列:时钟/日期/统计 */
+.home-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.home-time {
+  font-size: 74px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-stats {
+  display: flex;
+  gap: 28px;
+  margin-top: 26px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stat-num {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: var(--c-faint);
+}
+
+/* 今日任务卡片(带进度条) */
+.stat-task {
+  flex: 1;
+  max-width: 320px;
+}
+
+.stat-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.stat-track {
+  height: 7px;
+  background: #3b3b3e;
+  overflow: hidden;
+  margin-top: 12px;
+  border-radius: 4px;
+}
+
+.stat-fill {
+  height: 100%;
+  background: var(--c-red);
+}
+
+.stat-hint {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--c-faint);
+  margin-top: 8px;
+}
+
+/* 右侧身份栏(右上角,贴合内容) */
+.home-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-self: flex-start;
+  width: 230px;
+  flex-shrink: 0;
+}
+
+/* 玩家数据卡(同一框内:ID/部门/职位/余额) */
+.home-player-card {
+  border: 1px solid var(--c-line);
+  background: #2c2c2f;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.player-position {
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  color: var(--c-ink);
+}
+
+.player-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 3px;
+}
+
+.player-shape {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--c-red);
+}
+
+.player-kicker {
+  font-size: 7px;
+  letter-spacing: 0.32em;
+  color: var(--c-faint);
+}
+
+.player-id {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--c-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-dept {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--c-ink);
+}
+
+.player-balance {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--c-ink);
+}
+
+.player-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--c-line);
+  margin: 3px 0;
+}
+
+/* 重要消息 */
+.home-important {
+  flex: 0 0 auto;
+}
+
+.imp-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.imp-kicker {
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: var(--c-faint);
+}
+
+.imp-title {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--c-muted);
+}
+
+.imp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.imp-empty {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--c-faint);
+  padding: 8px 0;
+}
+
+/* 底部 */
+.home-kicker {
+  flex: 0 0 auto;
+  font-size: 9px;
+  letter-spacing: 0.38em;
+  color: var(--c-faint);
+  text-align: center;
+}
+
+/* 重要消息 @ 图标 */
+.imp-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  background: var(--c-red-soft);
+  border: 1px solid var(--c-red-line);
+  color: var(--c-red);
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.imp-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--c-line);
+  border-left: 2px solid var(--c-red);
+  background: rgba(22, 22, 29, 0.35);
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.imp-item:hover {
+  border-color: var(--c-line-2);
+  background: var(--c-panel);
+}
+.imp-item.notice-pinned {
+  border-left-width: 4px;
+  border-color: var(--c-red-line);
+  background: linear-gradient(90deg, rgba(180, 45, 45, 0.18), rgba(22, 22, 29, 0.35));
+}
+.imp-item.notice-pinned .imp-icon {
+  background: var(--c-red);
+  color: #fff;
+}
+
+.imp-room {
+  flex: 0 0 auto;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--c-red);
+}
+
+.imp-content {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--c-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.imp-time {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--c-faint);
+}
+
+.imp-dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  background: var(--c-red);
+  border-radius: 50%;
+}
+
+/* ---- 通用标签 ---- */
+.ctrl-tag {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px 7px;
+  border: 1px solid var(--c-line-2);
+  color: var(--c-muted);
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  border-radius: 3px;
+}
+
+.ctrl-tag-red {
+  border-color: var(--c-red-line);
+  color: var(--c-red);
+}
+
+
+/* ---- 通讯板块 tab ---- */
+.comm-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.comm-tab {
+  border: 1px solid var(--c-line);
+  background: transparent;
+  color: var(--c-muted);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  padding: 6px 14px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.comm-tab:hover {
+  color: var(--c-ink);
+}
+
+.comm-tab-active {
+  border-color: var(--c-line-2);
+  background: var(--c-panel);
+  color: var(--c-ink);
+}
+
+.comm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.comm-panel-hidden {
+  display: none;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panel-kicker {
+  font-size: 9px;
+  letter-spacing: 0.34em;
+  color: var(--c-faint);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.section-hidden {
+  display: none;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--c-muted);
+}
+
+/* ---- 列表与条目 ---- */
+.ctrl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.phone-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  padding: 10px 14px;
+  min-width: 0;
+}
+
+.room-item {
+  cursor: pointer;
+}
+
+.room-item:hover,
+.friend-item:hover {
+  border-color: var(--c-line-2);
+  background: var(--c-panel-2);
+}
+
+.friend-item {
+  cursor: pointer;
+}
+
+.item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.item-name {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--c-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-sub {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--c-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.empty-tip {
+  padding: 22px 0;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--c-faint);
+  text-align: center;
+}
+
+/* ---- 头像 ---- */
+.avatar {
+  position: relative;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--c-line-2);
+  background: var(--c-panel-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.avatar-gold { border-color: rgba(179, 18, 18, 0.55); }
+.avatar-green { border-color: rgba(120, 160, 120, 0.5); }
+
+.avatar-text {
+  font-size: 15px;
+  color: var(--c-ink);
+  user-select: none;
+}
+
+.avatar-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* AUI <texture> 扩展元素(头像/物品图标):必须给宽高,引擎才渲染 */
+.avatar texture,
+.avatar-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- 小按钮 ---- */
+.mini-btn {
+  border: 1px solid var(--c-line-2);
+  background: transparent;
+  color: var(--c-muted);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  padding: 5px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.mini-btn:hover { border-color: var(--c-ink); color: var(--c-ink); }
+
+.mini-btn-ok {
+  border-color: rgba(120, 160, 120, 0.5);
+  color: #8fb28f;
+}
+
+.mini-btn-ok:hover {
+  border-color: #9fbf9f;
+  color: #bcd6bc;
+}
+
+.mini-btn-no {
+  border-color: var(--c-line-2);
+  color: var(--c-muted);
+}
+
+.mini-btn-danger {
+  border-color: var(--c-red-line);
+  color: var(--c-red);
+}
+
+.mini-btn-danger:hover {
+  background: var(--c-red-soft);
+  color: #e06a70;
+}
+
+/* ---- 徽标 ---- */
+.badge {
+  flex: 0 0 auto;
+  min-width: 20px;
+  padding: 2px 8px;
+  border: 1px solid var(--c-line-2);
+  color: var(--c-muted);
+  font-size: 10px;
+  text-align: center;
+  border-radius: 3px;
+}
+
+.badge-danger {
+  border-color: var(--c-red-line);
+  color: var(--c-red);
+}
+
+.badge-success {
+  color: #9fbf8f;
+  border-color: #4a5a42;
+}
+
+
+/* ---- 聊天页 ---- */
+/* 难点: AUI 的 flex-grow 不生效, 与其他页面同理(.page-content 固定宽 691px)。
+   聊天页不能依赖 flex:1 拉伸, 必须给各层显式固定宽, 否则整页收缩到内容宽(游戏内 213px), 右侧空出大片空白。 */
+#page-chat {
+  width: 691px;
+  box-sizing: border-box;
+  align-self: stretch;
+}
+
+.chat-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  width: 691px;
+  box-sizing: border-box;
+}
+
+.chat-messages {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 22px;
+  /* 滚动条隐藏同 .page-content: overflow-y hidden + Java 侧滚动接管 */
+  overflow-y: hidden;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.msg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 76%;
+}
+
+.msg-row-mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.msg-row-other {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.msg-meta {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--c-faint);
+}
+
+.msg-bubble {
+  border: 1px solid var(--c-line-2);
+  background: var(--c-panel);
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--c-ink);
+  word-break: break-word;
+  border-radius: 8px;
+}
+
+.msg-row-mine .msg-bubble {
+  border-color: var(--c-red-line);
+  background: var(--c-red-soft);
+}
+
+/* ---- 成员栏 ---- */
+.chat-members {
+  flex: 0 0 200px;
+  width: 200px;
+  border-left: 1px solid var(--c-line);
+  padding: 14px;
+  /* 滚动条隐藏同 .page-content */
+  overflow-y: hidden;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-members-hidden {
+  display: none;
+}
+
+.members-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--c-muted);
+  margin-bottom: 4px;
+}
+
+.member-invite {
+  margin-left: auto;
+  border: 1px solid var(--c-line-2);
+  background: transparent;
+  color: var(--c-muted);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.member-invite:hover { color: var(--c-ink); border-color: var(--c-ink); }
+
+.member-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+}
+
+.member-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--c-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-owner {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--c-red);
+  border: 1px solid var(--c-red-line);
+  padding: 1px 6px;
+}
+
+.member-kick {
+  border: 0;
+  background: transparent;
+  color: var(--c-faint);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.member-kick:hover { color: var(--c-red); }
+
+/* ---- 聊天输入栏 ---- */
+.chat-inputbar {
+  flex: 0 0 auto;
+  display: flex;
+  border-top: 1px solid var(--c-line);
+  padding: 12px 22px;
+  gap: 10px;
+  width: 691px;
+  box-sizing: border-box;
+}
+
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--c-line-2);
+  background: rgba(12, 12, 15, 0.6);
+  color: var(--c-ink);
+  font-size: 13px;
+  padding: 9px 12px;
+}
+
+.chat-input:focus {
+  outline: none;
+  border-color: var(--c-red);
+}
+
+.chat-send {
+  border: 1px solid var(--c-red);
+  background: var(--c-red);
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  padding: 0 22px;
+  cursor: pointer;
+}
+
+.chat-send:hover { background: #991010; border-color: #991010; }
+
+
+/* ---- 部门页 ---- */
+.dept-badge {
+  flex: 0 0 auto;
+  border: 1px solid var(--c-red-line);
+  color: var(--c-red);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  padding: 6px 16px;
+}
+
+.dept-intro {
+  border-left: 2px solid var(--c-red);
+  padding: 4px 0 4px 16px;
+  margin-bottom: 20px;
+}
+
+.dept-intro-kicker {
+  font-size: 9px;
+  letter-spacing: 0.34em;
+  color: var(--c-faint);
+  margin-bottom: 6px;
+}
+
+.dept-intro-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--c-muted);
+}
+
+.dept-section-head {
+  margin: 8px 0 4px;
+}
+
+.dept-request {
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.dept-extend {
+  margin-top: 8px;
+  padding: 18px 0;
+  border: 1px dashed var(--c-line-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dept-extend-hint {
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--c-faint);
+}
+
+/* ---- 工作日志 ---- */
+.log-date {
+  flex: 0 0 auto;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--c-muted);
+}
+
+.log-overview {
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.log-overview-text {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.log-kicker {
+  font-size: 9px;
+  letter-spacing: 0.34em;
+  color: var(--c-faint);
+}
+
+.log-progress-num {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.log-progress-track {
+  height: 4px;
+  background: var(--c-line);
+  overflow: hidden;
+}
+
+.log-progress-fill {
+  height: 100%;
+  background: var(--c-red);
+  width: 0%;
+  transition: width 0.3s;
+}
+
+.log-refresh-hint {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--c-faint);
+}
+
+/* ---- 任务卡片 ---- */
+.task-card {
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.task-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--c-ink);
+}
+
+.task-state {
+  flex: 0 0 auto;
+  border: 1px solid var(--c-line-2);
+  color: var(--c-muted);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+}
+
+.task-state-claimable {
+  border-color: #9fbf9f;
+  color: #9fbf9f;
+}
+
+.task-state-claimed {
+  border-color: var(--c-line-2);
+  color: var(--c-faint);
+}
+
+.task-desc {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--c-faint);
+}
+
+.task-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.task-track {
+  flex: 1;
+  height: 4px;
+  background: var(--c-line);
+  overflow: hidden;
+}
+
+.task-fill {
+  height: 100%;
+  background: var(--c-red);
+  width: 0%;
+}
+
+.task-count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--c-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.task-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.task-reward {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--c-red);
+}
+
+/* ---- 娱乐页 ---- */
+/* 难点: AUI 对 fr 均分失效(实测 1fr 1fr 每列都占满容器全宽 750px, 卡片溢出)。
+   必须用固定像素列。AUI 的 justify-content:center 对 grid 不生效,
+   用固定宽度 + margin:0 auto 居中消除右侧空白。 */
+.game-grid {
+  display: grid;
+  grid-template-columns: 315px 315px;
+  gap: 14px;
+  width: 644px;
+  margin: 0 auto;
+}
+
+.game-card {
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.game-card:hover {
+  border-color: var(--c-red-line);
+  background: var(--c-panel-2);
+}
+
+.game-card-disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.game-glyph {
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--c-line-2);
+  color: var(--c-red);
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.game-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--c-ink);
+}
+
+.game-desc {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--c-faint);
+}
+
+
+/* ---- 游戏页 ---- */
+.diff-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 22px 0;
+  border-bottom: 1px solid var(--c-line);
+}
+
+.diff-tab {
+  border: 1px solid var(--c-line);
+  border-bottom: 0;
+  background: transparent;
+  color: var(--c-muted);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  padding: 7px 18px;
+  cursor: pointer;
+}
+
+.diff-tab:hover { color: var(--c-ink); }
+
+.diff-tab-active {
+  border-color: var(--c-line-2);
+  background: var(--c-panel);
+  color: var(--c-ink);
+}
+
+.game-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: hidden;
+}
+
+/* 难点: AUI 的 max-width 可能不生效(实测 750px 全宽), 用固定宽度 + margin:0 auto 居中 */
+.game-bar {
+  width: 560px;
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.game-stat {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--c-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.game-hint {
+  margin: 12px auto 20px;
+  width: 560px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--c-faint);
+  text-align: center;
+}
+
+.game-result {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--c-muted);
+}
+
+.game-result-win {
+  color: #9fbf9f;
+}
+
+.game-result-lose {
+  color: var(--c-red);
+}
+
+/* ---- 扫雷 ---- */
+/* 难点: AUI 不支持 max-content/fr/justify-content:center/父容器 align-items:center。
+   用固定容器宽度(=轨道总宽) + margin:0 auto 居中(AUI 支持 margin auto)。
+   宽度 = 列数×格子 + (列数-1)×gap。 */
+.ms-grid {
+  display: grid;
+  gap: 2px;
+}
+
+.ms-8  { grid-template-columns: repeat(8, 27px); width: 230px; margin: 0 auto; }
+.ms-12 { grid-template-columns: repeat(12, 22px); width: 286px; margin: 0 auto; }
+.ms-24 { grid-template-columns: repeat(24, 23px); width: 598px; margin: 0 auto; }
+
+/* 难点: AUI 里 grid 项的 width:100% 不会被轨道约束(实测格子占满容器 358px 而非 28px)。
+   必须移除 width, 让格子宽度由 grid-template-columns 轨道决定, aspect-ratio:1 保持正方形。 */
+.ms-cell {
+  aspect-ratio: 1;
+  border: 1px solid var(--c-line-2);
+  background: var(--c-panel-2);
+  color: var(--c-ink);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.ms-cell:hover { border-color: var(--c-ink); }
+
+.ms-cell-open {
+  background: rgba(10, 10, 13, 0.8);
+  cursor: default;
+}
+
+.ms-cell-mine {
+  color: var(--c-red);
+  background: var(--c-red-soft);
+}
+
+.ms-cell-flag {
+  color: var(--c-red);
+}
+
+.ms-cell-n1 { color: #9fbf9f; }
+.ms-cell-n2 { color: #d9c47f; }
+.ms-cell-n3 { color: #e08a6a; }
+.ms-cell-n4 { color: var(--c-red); }
+
+/* ---- 记忆翻牌 ---- */
+/* 难点: 与扫雷同理, 网格高度不能超出游戏外框。
+   6 行时可用高度约 260px: 6行×36px + 5×8gap = 256px(逻辑)。
+   4 行时格子可大些: 4行×58px + 3×8gap = 256px。
+   宽度 = 列数×格子 + (列数-1)×gap, 固定后 margin auto 居中。 */
+.mm-grid {
+  display: grid;
+  gap: 8px;
+  justify-content: center;
+}
+
+.mm-4 { grid-template-columns: repeat(4, 58px); width: 256px; margin: 0 auto; }
+.mm-5 { grid-template-columns: repeat(5, 46px); width: 262px; margin: 0 auto; }
+.mm-6 { grid-template-columns: repeat(6, 36px); width: 256px; margin: 0 auto; }
+.mm-8 { grid-template-columns: repeat(8, 36px); width: 344px; margin: 0 auto; }
+
+.mm-card {
+  aspect-ratio: 1;
+  border: 1px solid var(--c-line-2);
+  background: var(--c-panel-2);
+  color: var(--c-ink);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.mm-card:hover { border-color: var(--c-ink); }
+
+.mm-card-flipped {
+  border-color: var(--c-red-line);
+  background: var(--c-red-soft);
+}
+
+.mm-card-done {
+  border-color: #4a6a4a;
+  background: rgba(90, 130, 90, 0.15);
+}
+
+/* ---- 2048 ---- */
+/* 难点: 与扫雷同理, 网格+底部hint的总高度不能超出游戏外框。
+   实测: 网格自身需留出下方 game-hint(约30px)的空间,
+   6行×32px + 5×6gap + padding12 = 234px; 5行39px→231px; 4行50px→230px。
+   宽度 = 轨道总宽 + 左右 padding(12px), 固定后 margin auto 居中。 */
+.g2048-grid {
+  display: grid;
+  gap: 6px;
+  background: rgba(10, 10, 13, 0.8);
+  border: 1px solid var(--c-line);
+  padding: 6px;
+}
+
+.g2-4 { grid-template-columns: repeat(4, 50px); width: 230px; margin: 0 auto; }
+.g2-5 { grid-template-columns: repeat(5, 39px); width: 231px; margin: 0 auto; }
+.g2-6 { grid-template-columns: repeat(6, 32px); width: 234px; margin: 0 auto; }
+
+.g2048-cell {
+  aspect-ratio: 1;
+  background: rgba(24, 24, 29, 0.9);
+  color: var(--c-ink);
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.g2048-t2 { background: rgba(50, 50, 58, 0.9); }
+.g2048-t4 { background: rgba(70, 66, 60, 0.9); }
+.g2048-t8 { background: rgba(110, 66, 46, 0.9); }
+.g2048-t16 { background: rgba(130, 60, 42, 0.9); }
+.g2048-t32 { background: rgba(150, 50, 40, 0.9); }
+.g2048-t64 { background: rgba(170, 44, 38, 0.9); }
+.g2048-t128 { background: rgba(180, 70, 30, 0.95); }
+.g2048-t256 { background: rgba(190, 100, 20, 0.95); }
+.g2048-t512 { background: rgba(200, 130, 10, 0.95); }
+.g2048-t1024 { background: rgba(210, 160, 0, 0.95); }
+.g2048-t2048 { background: rgba(220, 190, 0, 0.95); }
+
+/* ---- 贪吃蛇 ---- */
+/* 难点: 与扫雷/2048 同理, canvas 需缩到不超出游戏外框(内容区底部约 312px),
+   16 格×14px = 224px 逻辑(屏幕约145px) + 顶部 game-bar 正好放下。
+   居中方式同 2048: 固定宽度 + margin:0 auto(AUI 父容器 align-items 不生效)。
+   canvas 是 inline 元素必须 display:block, 否则 margin auto 不生效。 */
+.snake-canvas {
+  display: block;
+  width: 224px;
+  height: 224px;
+  margin: 0 auto;
+  border: 1px solid var(--c-line-2);
+  background: #2c2c2f;
+  image-rendering: pixelated;
+}
+
+
+/* ---- 排行榜 ---- */
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  padding: 10px 16px;
+  margin-bottom: 8px;
+}
+
+.lb-me {
+  border-color: var(--c-red-line);
+  background: var(--c-red-soft);
+}
+
+.lb-rank {
+  flex: 0 0 26px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-muted);
+  text-align: center;
+}
+
+.lb-rank-top {
+  color: var(--c-red);
+}
+
+.lb-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--c-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-score {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--c-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-empty {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--c-faint);
+}
+
+/* ---- Modal ---- */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(5, 5, 8, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-backdrop.open { display: flex; }
+
+.modal-dismiss { position: absolute; inset: 0; }
+
+.ctrl-modal {
+  position: relative;
+  z-index: 1;
+  width: 400px;
+  max-width: 92%;
+  background: #2c2c2f;
+  border: 1px solid var(--c-line-2);
+  border-top: 2px solid var(--c-red);
+}
+
+.icon-picker-modal {
+  width: 560px;
+  max-width: 94%;
+}
+
+.modal-head {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--c-line);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  color: var(--c-ink);
+}
+
+.modal-body { padding: 20px; }
+
+.modal-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  color: var(--c-muted);
+}
+
+.modal-input {
+  width: 100%;
+  /* content-box 下 width:100% 会额外加上 padding/border 向右溢出, 必须 border-box */
+  box-sizing: border-box;
+  border: 1px solid var(--c-line-2);
+  background: #1d1d1f;
+  color: var(--c-ink);
+  font-size: 13px;
+  padding: 9px 12px;
+  letter-spacing: 0.04em;
+}
+
+.modal-input:focus {
+  outline: none;
+  border-color: var(--c-red);
+}
+
+.modal-help {
+  margin-top: 9px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--c-faint);
+}
+
+.modal-foot {
+  padding: 14px 20px;
+  border-top: 1px solid var(--c-line);
+  display: flex;
+  /* 修复按钮文本偏上: flex 默认 stretch 把按钮拉高, content 盒被拉伸
+     后 AUI 行盒垂直定位错位(实测 content 高 23.5 vs 正常 11.7),
+     改为 center 让按钮保持自然行高 */
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-foot-split {
+  justify-content: flex-start;
+}
+
+.modal-btn {
+  border: 1px solid var(--c-line-2);
+  background: transparent;
+  color: var(--c-muted);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  /* AUI 中较大 letter-spacing + 窄按钮会把短文本折行(实测「搜索」被折成两行,
+     content 高 23.5 vs 单行 11.7, 字形错位偏上), nowrap 强制单行 */
+  white-space: nowrap;
+  padding: 8px 20px;
+  cursor: pointer;
+}
+
+.modal-btn:hover { border-color: var(--c-ink); color: var(--c-ink); }
+
+.modal-btn-primary {
+  border-color: var(--c-red);
+  background: var(--c-red);
+  color: #ffffff;
+}
+
+.modal-btn-primary:hover {
+  background: #d6333a;
+  border-color: #d6333a;
+}
+
+/* 解散等危险操作按钮 */
+.modal-btn-danger {
+  border: 1px solid var(--c-red);
+  background: transparent;
+  color: var(--c-red);
+}
+
+.modal-btn-danger:hover {
+  background: var(--c-red);
+  color: #ffffff;
+}
+
+.foot-spacer {
+  flex: 1;
+}
+
+.form-row {
+  margin-bottom: 14px;
+}
+
+/* ---- 头像选择行(新建/设置) ---- */
+.avatar-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.room-avatar-box {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--c-line-2);
+  background: var(--c-panel-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* AUI <texture> 房间头像(物品图标):必须给宽高,引擎才渲染 */
+.room-avatar-box texture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- 物品图标选择器 ---- */
+.icon-search-row {
+  display: flex;
+  /* 同 modal-foot: 避免 stretch 拉高按钮导致文本偏上 */
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+  max-height: 300px;
+  /* 滚动条隐藏同 .page-content */
+  overflow-y: hidden;
+}
+
+.icon-cell {
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+}
+
+.icon-cell:hover {
+  border-color: var(--c-red-line);
+}
+
+.icon-cell-box {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-cell-text {
+  font-size: 12px;
+  color: var(--c-ink);
+}
+
+/* AUI <texture> 物品图标:必须给宽高,引擎才渲染 */
+.icon-cell-box texture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.icon-cell-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.icon-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* ---- 响应式 ---- */
+/* 中等窗口:平板等比缩小,保持平板造型(不覆盖全屏)
+   难点(2026-08 内容缩放): meta zoom=0.667 后游戏内逻辑视口宽为 640/0.667≈960,
+   原 max-width:1120px 会被游戏误命中(stage padding 导致平板偏移)。阈值改为 940px
+   避开 960, 该规则仅浏览器预览中等窗口生效。 */
+@media (max-width: 940px) and (min-width: 701px) {
+  .phone-stage { padding: 28px; }
+  .tablet { zoom: 0.82; }
+}
+
+/* 难点: 曾有一个 @media (max-width:700px) 将 tablet 设为 width:100%;height:100vh 占满全屏。
+   AUI viewport 固定 640px 宽, 会命中该媒体查询导致手机界面在游戏内被撑满全屏(实测 618x348),
+   与设计的外框平板(500x300)不符。已删除该全屏覆盖, tablet 始终保持外框尺寸。 */
+@media (max-width: 560px) {
+  .side-nav { flex-basis: 64px; width: 64px; }
+  .side-item { height: 58px; }
+  .home-hero { padding: 32px 24px; }
+  .home-time { font-size: 46px; }
+  .home-stats { gap: 28px; }
+  .page-head { padding: 16px 18px 12px; }
+  .page-content { padding: 8px 18px 20px; }
+  .chat-messages { padding: 14px 16px; }
+  .head-title { font-size: 20px; }
+}
+
+/* ============================================================
+   游戏内可读性放大(外框 tablet/device 尺寸不变)
+   背景: AUI viewport 1200x700 缩放到游戏内约 0.5x,原 8-13px 字号
+         显示后仅 4-6px 过小过糊。此处放大内部字号、元素并压缩间距,
+         让内容在外框内更饱满、清晰,同时缓解"元素分散太开"。
+   ============================================================ */
+
+/* ---- 系统栏 ---- */
+.sys-bar { flex-basis: 24px; height: 24px; font-size: 13px; }
+.sys-dot { width: 6px; height: 6px; }
+
+/* ---- 侧边导航 ---- */
+.side-nav { flex-basis: 58px; width: 58px; }
+/* 5 个按钮均分侧边栏高度(不留空), flex:1 替代固定 76px */
+.side-item { flex: 1 1 0%; height: auto; min-height: 0; gap: 3px; }
+.side-glyph { font-size: 30px; }
+.side-label { font-size: 15px; }
+.nav-badge { min-width: 14px; height: 14px; font-size: 10px; line-height: 14px; }
+
+/* ---- 页头 ---- */
+.page-head { padding: 10px 16px 8px; gap: 10px; }
+.head-title { font-size: 27px; }
+.head-kicker { font-size: 11px; }
+.head-sub { font-size: 13px; }
+.head-btn { font-size: 13px; padding: 6px 14px; }
+
+/* ---- 通用 ---- */
+.page-content { padding: 12px 16px 16px; }
+.page-hint { font-size: 12px; }
+.ctrl-tag { font-size: 12px; min-width: 24px; padding: 2px 8px; line-height: 18px; }
+.badge { font-size: 12px; padding: 3px 9px; }
+
+/* ---- 通讯 tab / 列表 ---- */
+.comm-tab { font-size: 13px; padding: 8px 16px; }
+.panel-kicker { font-size: 11px; }
+.section-head { font-size: 14px; }
+.section { gap: 6px; }
+.ctrl-list { gap: 6px; }
+.phone-list-item { padding: 8px 12px; gap: 10px; }
+.item-name { font-size: 16px; }
+.item-sub { font-size: 13px; }
+.avatar { flex-basis: 28px; width: 28px; height: 28px; }
+.avatar-text { font-size: 18px; }
+.mini-btn { font-size: 13px; padding: 6px 14px; }
+.empty-tip { font-size: 13px; padding: 14px 0; }
+
+/* ---- 聊天页 ---- */
+.chat-messages { padding: 12px 16px; gap: 8px; }
+.msg-meta { font-size: 11px; }
+.msg-bubble { font-size: 16px; padding: 8px 12px; }
+.chat-members { flex-basis: 168px; width: 168px; }
+.members-head { font-size: 13px; }
+.member-name { font-size: 14px; }
+.member-invite { font-size: 12px; }
+.member-kick { font-size: 12px; }
+.chat-inputbar { padding: 10px 16px; }
+.chat-input { font-size: 16px; padding: 10px 12px; }
+.chat-send { font-size: 14px; }
+
+/* ---- 主屏 ---- */
+/* 四角取景框占 8~24px 角落区, 内容内缩到 24px 内侧, 避免盖住边角 */
+#page-home { padding: 24px; gap: 6px; }
+.home-top { gap: 14px; }
+/* 背景装饰(网格线/取景框/水印)已恢复; 大三角水印尺寸从 330px 缩小,
+   规避当年因超大符号渲染引发的卡顿(仅水印参与, 网格与取景框本就轻量) */
+.home-bg { display: block; }
+.home-time { font-size: 52px; }
+.home-stats { gap: 14px; margin-top: 3px; }
+.stat-num { font-size: 27px; line-height: 30px; }
+.stat-label { font-size: 12px; }
+.stat-hint { font-size: 12px; margin-top: 3px; }
+.stat-track { height: 7px; margin-top: 2px; }
+.home-side { width: 148px; gap: 6px; }
+/* 玩家卡: 名称-文本间距约 7px(行高 1.05 + gap 6px)。不用负 margin(AUI 不支持, 会崩溃) */
+.home-player-card { padding: 8px 14px; gap: 2px; line-height: 1.2; }
+/* AUI 对小数倍 line-height 解析异常(1.05 导致文字裁切), 玩家卡各文本用固定 px 行高 */
+.player-kicker { line-height: 22px; }
+.player-id { line-height: 34px; }
+.player-dept, .player-position { line-height: 22px; }
+.player-balance { line-height: 28px; }
+.player-divider { margin: 0; }
+.player-kicker { font-size: 9px; }
+.player-id { font-size: 22px; }
+.player-dept, .player-position { font-size: 13px; }
+.player-balance { font-size: 17px; }
+.player-shape { font-size: 26px; }
+.imp-head { margin-bottom: 3px; gap: 8px; }
+.imp-title { font-size: 14px; }
+.imp-list { gap: 3px; }
+.imp-item { padding: 4px 9px; gap: 9px; }
+.imp-item.notice-pinned { border-left-width: 4px; background: linear-gradient(90deg, rgba(180, 45, 45, 0.18), rgba(22, 22, 29, 0.35)); }
+.imp-content { font-size: 14px; }
+.imp-time { font-size: 12px; }
+.imp-kicker { font-size: 11px; }
+
+/* ---- 部门页 ---- */
+.dept-badge { font-size: 14px; }
+.dept-intro-text { font-size: 15px; }
+.dept-intro-kicker { font-size: 11px; }
+.dept-extend-hint { font-size: 12px; }
+
+/* ---- 工作日志 ---- */
+.log-date { font-size: 14px; }
+.log-overview { padding: 12px 16px; gap: 10px; margin-bottom: 12px; }
+.log-kicker { font-size: 11px; }
+.log-progress-num { font-size: 24px; }
+.log-refresh-hint { font-size: 12px; }
+.task-card { padding: 12px 16px; gap: 7px; margin-bottom: 8px; }
+.task-name { font-size: 16px; }
+.task-state { font-size: 12px; padding: 4px 12px; }
+.task-desc { font-size: 13px; }
+.task-count { font-size: 13px; }
+.task-reward { font-size: 13px; }
+
+/* ---- 娱乐页 ---- */
+.game-grid {
+  display: grid;
+  grid-template-columns: 315px 315px;
+  gap: 12px;
+  width: 642px;
+  margin: 0 auto;
+}
+.game-card { padding: 16px; gap: 14px; }
+.game-glyph { flex-basis: 40px; width: 40px; height: 40px; font-size: 22px; }
+.game-name { font-size: 18px; }
+.game-desc { font-size: 12px; }
+
+/* ---- 游戏页 ---- */
+.diff-tab { font-size: 13px; padding: 8px 18px; }
+.game-stat { font-size: 14px; }
+.game-hint { font-size: 12px; }
+.game-result { font-size: 14px; }
+
+/* ---- 排行榜 ---- */
+.lb-row { padding: 9px 14px; gap: 12px; }
+.lb-rank { font-size: 15px; }
+.lb-name { font-size: 15px; }
+.lb-score { font-size: 14px; }
+
+/* ---- Modal ---- */
+.ctrl-modal { width: 290px; }
+.icon-picker-modal { width: 390px; }
+.modal-head { font-size: 15px; padding: 14px 18px; }
+.modal-body { padding: 18px; }
+.modal-label { font-size: 12px; }
+.modal-input { font-size: 16px; padding: 10px 12px; }
+.modal-help { font-size: 12px; }
+.modal-btn { font-size: 14px; padding: 9px 20px; }
+.room-avatar-box { width: 32px; height: 32px; }
+.icon-cell-box { width: 24px; height: 24px; }
+.icon-cell-text { font-size: 14px; }
+.form-row { margin-bottom: 12px; }
+
+/* ============================================================
+   防溢出保护(难点: AUI 布局引擎与浏览器有差异, 复杂 grid/flex 可能撑破 tablet 外框,
+   溢出内容渲染会卡死崩溃。强制所有内容不超出外框) */
+.tablet-body,
+.content-area,
+.page,
+.page-content,
+.chat-messages,
+.chat-main,
+.comm-panel,
+.section,
+.ctrl-list,
+.game-content,
+.dept-page { max-width: 100%; }
+
+.page-content,
+.chat-messages,
+.chat-members { overflow-x: hidden; }
+
+/* 所有 grid 限制在容器内 */
+.game-grid,
+.icon-grid,
+.ms-grid,
+.mm-grid,
+.g2048-grid { max-width: 100%; box-sizing: border-box; }
+
+/* 固定宽/高内容不允许撑破容器 */
+.game-bar,
+.chat-members,
+.side-nav,
+.home-side { max-width: 100%; }
+
+/* icon-grid 用固定列(AUI 1fr 支持, 但限制每格最小宽度防止溢出) */
+/* 难点: AUI Grid 不支持 minmax()(auto-fill+minmax 曾导致溢出崩溃), 用固定 8 列 */
+.icon-grid { grid-template-columns: repeat(8, 1fr); }
+
+/* ============================================================
+   二级放大: 文本再放大一档 (只改字号, 不动布局尺寸, 防溢出)
+   ============================================================ */
+.sys-bar { font-size: 14px; }
+.side-glyph { font-size: 34px; }
+.side-label { font-size: 17px; }
+.nav-badge { font-size: 11px; }
+.head-title { font-size: 31px; }
+.head-kicker { font-size: 13px; }
+.head-sub { font-size: 15px; }
+.head-btn { font-size: 15px; }
+.page-hint { font-size: 14px; }
+.comm-tab { font-size: 15px; }
+.panel-kicker { font-size: 13px; }
+.section-head { font-size: 16px; }
+.item-name { font-size: 19px; }
+.item-sub { font-size: 15px; }
+.avatar-text { font-size: 21px; }
+.mini-btn { font-size: 15px; }
+.empty-tip { font-size: 15px; }
+.ctrl-tag { font-size: 13px; }
+.badge { font-size: 13px; }
+.msg-meta { font-size: 13px; }
+.msg-bubble { font-size: 19px; }
+.members-head { font-size: 15px; }
+.member-name { font-size: 16px; }
+.member-kick { font-size: 13px; }
+.chat-input { font-size: 19px; }
+.chat-send { font-size: 16px; }
+.home-time { font-size: 82px; }
+.stat-num { font-size: 31px; line-height: 34px; }
+.stat-label { font-size: 14px; }
+.stat-hint { font-size: 14px; }
+/* 名称字号放大到 16px, 与文本(29px)协调, 减少视觉空隙感 */
+/* AUI 渲染高度约为 CSS 字号一半, 必须大幅放大字号才能让游戏内文本明显可见 */
+.player-kicker { font-size: 20px; letter-spacing: 0.08em; line-height: 22px; }
+.player-id { font-size: 32px; letter-spacing: 0.03em; }
+.player-dept, .player-position { font-size: 20px; letter-spacing: 0.06em; }
+.player-balance { font-size: 26px; }
+/* 玩家卡整体行高 1.2(避免 AUI 对 1.05 解析异常裁切文字) */
+.home-player-card { line-height: 1.2; }
+.home-player-card .player-card-top { margin-bottom: 0; }
+.imp-title { font-size: 16px; }
+.imp-content { font-size: 17px; }
+.imp-time { font-size: 14px; }
+.imp-kicker { font-size: 13px; }
+.dept-badge { font-size: 16px; }
+.dept-intro-text { font-size: 17px; }
+.dept-intro-kicker { font-size: 13px; }
+.dept-extend-hint { font-size: 14px; }
+.log-date { font-size: 16px; }
+.log-kicker { font-size: 13px; }
+.log-progress-num { font-size: 27px; }
+.log-refresh-hint { font-size: 14px; }
+.task-name { font-size: 19px; }
+.task-state { font-size: 14px; }
+.task-desc { font-size: 15px; }
+.task-count { font-size: 15px; }
+.task-reward { font-size: 15px; }
+.game-name { font-size: 21px; }
+.game-desc { font-size: 14px; }
+.diff-tab { font-size: 15px; }
+.game-stat { font-size: 16px; }
+.game-hint { font-size: 14px; }
+.game-result { font-size: 16px; }
+.lb-rank { font-size: 17px; }
+.lb-name { font-size: 17px; }
+.lb-score { font-size: 16px; }
+.modal-head { font-size: 17px; }
+.modal-label { font-size: 14px; }
+.modal-input { font-size: 18px; }
+.modal-help { font-size: 14px; }
+.modal-btn { font-size: 16px; }
+.icon-cell-text { font-size: 16px; }
+.ms-cell { font-size: 15px; }
+.mm-card { font-size: 25px; }
+.g2048-cell { font-size: 23px; }
+
+/* ============================================================
+   全局文本紧凑化:
+   - line-height 1.5 -> 1.3 (文字上下留白减小, 文字占比增大, 显得更大更实)
+   - 主要标签类 letter-spacing 减小 (em 值随字号放大导致间距过大)
+   ============================================================ */
+body.phone-body { line-height: 1.3; }
+
+.head-kicker, .panel-kicker, .home-kicker, .imp-kicker, .dept-intro-kicker,
+.log-kicker, .stat-label, .sys-brand { letter-spacing: 0.12em; }
+
+.head-sub, .page-hint, .stat-hint, .dept-extend-hint, .log-refresh-hint,
+.imp-title, .section-head, .msg-meta, .task-state, .game-hint,
+.game-desc, .modal-help, .empty-tip { letter-spacing: 0.08em; }
+
+/* ============================================================
+   三级放大: viewport 1200x700(渲染正常) + tablet 960x600 下,
+   字号按 0.5x 缩放反推大幅放大, 让游戏内文本清晰可见
+   ============================================================ */
+/* ---- 系统栏 / 侧边栏 ---- */
+.sys-bar { font-size: 15px; }
+.side-glyph { font-size: 42px; }
+.side-label { font-size: 20px; }
+.nav-badge { font-size: 13px; min-width: 16px; height: 16px; line-height: 16px; }
+
+/* ---- 页头 ---- */
+.head-title { font-size: 40px; }
+.head-kicker { font-size: 16px; }
+.head-sub { font-size: 19px; }
+.head-btn { font-size: 20px; padding: 8px 18px; }
+
+/* ---- 通用 ---- */
+.page-hint { font-size: 18px; }
+.ctrl-tag { font-size: 16px; min-width: 28px; padding: 3px 10px; line-height: 22px; }
+.badge { font-size: 16px; padding: 4px 11px; }
+
+/* ---- 通讯 tab / 列表 ---- */
+.comm-tab { font-size: 20px; padding: 10px 20px; }
+.panel-kicker { font-size: 16px; }
+.section-head { font-size: 21px; }
+.section { gap: 6px; }
+.ctrl-list { gap: 6px; }
+.phone-list-item { padding: 10px 14px; gap: 12px; }
+.item-name { font-size: 26px; }
+.item-sub { font-size: 20px; }
+.avatar { flex-basis: 46px; width: 46px; height: 46px; }
+.avatar-text { font-size: 26px; }
+.mini-btn { font-size: 20px; padding: 8px 18px; }
+.empty-tip { font-size: 19px; padding: 18px 0; }
+
+/* ---- 聊天页 ---- */
+.chat-messages { padding: 12px 16px; gap: 10px; }
+.msg-meta { font-size: 16px; }
+.msg-bubble { font-size: 26px; padding: 10px 14px; }
+.chat-members { flex-basis: 168px; width: 168px; }
+.members-head { font-size: 18px; }
+.member-name { font-size: 19px; }
+.member-invite { font-size: 16px; }
+.member-kick { font-size: 16px; }
+.chat-inputbar { padding: 12px 16px; }
+.chat-input { font-size: 24px; padding: 12px 14px; }
+.chat-send { font-size: 19px; }
+
+/* ---- 主屏 ---- */
+.home-time { font-size: 92px; }
+.stat-num { font-size: 38px; }
+.stat-label { font-size: 18px; }
+.stat-hint { font-size: 17px; }
+.player-kicker { font-size: 25px; letter-spacing: 0.08em; line-height: 27px; }
+.player-id { font-size: 40px; letter-spacing: 0.03em; line-height: 42px; }
+.player-dept, .player-position { font-size: 25px; letter-spacing: 0.06em; line-height: 27px; }
+.player-balance { font-size: 32px; line-height: 34px; }
+.player-shape { font-size: 34px; }
+.imp-title { font-size: 20px; }
+.imp-content { font-size: 22px; }
+.imp-time { font-size: 17px; }
+.imp-kicker { font-size: 16px; }
+
+/* ---- 部门页 ---- */
+.dept-badge { font-size: 19px; }
+.dept-intro-text { font-size: 21px; }
+.dept-intro-kicker { font-size: 16px; }
+.dept-extend-hint { font-size: 17px; }
+
+/* ---- 工作日志 ---- */
+.log-date { font-size: 19px; }
+.log-kicker { font-size: 16px; }
+.log-progress-num { font-size: 32px; }
+.log-refresh-hint { font-size: 17px; }
+.task-name { font-size: 26px; }
+.task-state { font-size: 17px; padding: 5px 14px; }
+.task-desc { font-size: 19px; }
+.task-count { font-size: 19px; }
+.task-reward { font-size: 18px; }
+
+/* ---- 娱乐页 ---- */
+.game-card { padding: 20px; gap: 16px; }
+.game-glyph { flex-basis: 58px; width: 58px; height: 58px; font-size: 32px; }
+.game-name { font-size: 28px; }
+.game-desc { font-size: 17px; }
+
+/* ---- 游戏页 ---- */
+.diff-tab { font-size: 19px; padding: 10px 22px; }
+.game-stat { font-size: 20px; }
+.game-hint { font-size: 17px; }
+.game-result { font-size: 19px; }
+
+/* ---- 排行榜 ---- */
+.lb-rank { font-size: 21px; }
+.lb-name { font-size: 21px; }
+.lb-score { font-size: 19px; }
+
+/* ---- Modal ---- */
+.ctrl-modal { width: 420px; }
+.modal-head { font-size: 21px; padding: 16px 20px; }
+.modal-label { font-size: 17px; }
+.modal-input { font-size: 24px; padding: 12px 14px; }
+.modal-help { font-size: 17px; }
+.modal-btn { font-size: 20px; padding: 11px 24px; }
+.room-avatar-box { width: 50px; height: 50px; }
+.icon-cell-box { width: 36px; height: 36px; }
+.icon-cell-text { font-size: 19px; }
+
+/* ---- 扫雷/翻牌/2048 ---- */
+.ms-cell { font-size: 19px; }
+.mm-card { font-size: 32px; }
+.g2048-cell { font-size: 28px; }
+
+/* ============================================================
+   640 模式(成功案例方案): viewport 640x360 + tablet 600x330,
+   scale=fit 接近 1:1, 字号回到正常值即清晰, 无需 CSS 放大。
+   本块覆盖上面所有"1200 放大"字号。
+   ============================================================ */
+.sys-bar { font-size: 13px; }
+.side-glyph { font-size: 26px; }
+.side-label { font-size: 14px; }
+.nav-badge { font-size: 11px; min-width: 14px; height: 14px; line-height: 14px; }
+
+.head-title { font-size: 19px; }
+.head-kicker { font-size: 12px; }
+.head-sub { font-size: 14px; }
+.head-btn { font-size: 14px; padding: 6px 14px; }
+
+.page-hint { font-size: 13px; }
+.ctrl-tag { font-size: 12px; min-width: 22px; padding: 2px 8px; line-height: 18px; }
+.badge { font-size: 13px; padding: 3px 9px; }
+
+.comm-tab { font-size: 14px; padding: 7px 15px; }
+.panel-kicker { font-size: 12px; }
+.section-head { font-size: 14px; }
+.phone-list-item { padding: 8px 11px; gap: 10px; }
+.item-name { font-size: 15px; }
+.item-sub { font-size: 12px; }
+.avatar-text { font-size: 16px; }
+.mini-btn { font-size: 14px; padding: 6px 14px; }
+.empty-tip { font-size: 14px; }
+
+.msg-meta { font-size: 12px; }
+.msg-bubble { font-size: 16px; padding: 8px 12px; }
+.members-head { font-size: 13px; }
+.member-name { font-size: 14px; }
+.member-invite { font-size: 13px; }
+.member-kick { font-size: 13px; }
+.chat-input { font-size: 15px; padding: 9px 12px; }
+.chat-send { font-size: 14px; }
+
+.home-time { font-size: 42px; }
+.stat-num { font-size: 22px; line-height: 24px; }
+.stat-label { font-size: 13px; }
+.stat-hint { font-size: 13px; }
+.player-kicker { font-size: 13px; letter-spacing: 0.08em; line-height: 15px; }
+.player-id { font-size: 18px; letter-spacing: 0.03em; line-height: 20px; }
+.player-dept, .player-position { font-size: 14px; letter-spacing: 0.06em; line-height: 16px; }
+.player-balance { font-size: 15px; line-height: 17px; }
+.player-shape { font-size: 22px; }
+.imp-title { font-size: 14px; }
+.imp-content { font-size: 15px; }
+.imp-time { font-size: 13px; }
+.imp-kicker { font-size: 12px; }
+
+.dept-badge { font-size: 15px; }
+.dept-intro-text { font-size: 16px; }
+.dept-intro-kicker { font-size: 12px; }
+.dept-extend-hint { font-size: 13px; }
+
+.log-date { font-size: 14px; }
+.log-kicker { font-size: 12px; }
+.log-progress-num { font-size: 19px; }
+.log-refresh-hint { font-size: 13px; }
+.task-name { font-size: 15px; }
+.task-state { font-size: 13px; padding: 4px 12px; }
+.task-desc { font-size: 13px; }
+.task-count { font-size: 14px; }
+.task-reward { font-size: 14px; }
+
+.game-card { padding: 14px; gap: 12px; }
+.game-glyph { flex-basis: 42px; width: 42px; height: 42px; font-size: 24px; }
+.game-name { font-size: 16px; }
+.game-desc { font-size: 13px; }
+
+.diff-tab { font-size: 14px; padding: 8px 18px; }
+.game-stat { font-size: 14px; }
+.game-hint { font-size: 13px; }
+.game-result { font-size: 14px; }
+
+.lb-rank { font-size: 15px; }
+.lb-name { font-size: 15px; }
+.lb-score { font-size: 14px; }
+
+.ctrl-modal { width: 290px; }
+.icon-picker-modal { width: 390px; }
+.modal-head { font-size: 14px; padding: 12px 16px; }
+.modal-label { font-size: 12px; }
+.modal-input { font-size: 15px; padding: 9px 12px; }
+.report-textarea { height: 170px; }
+.modal-help { font-size: 12px; }
+.modal-btn { font-size: 14px; padding: 9px 18px; }
+.room-avatar-box { width: 32px; height: 32px; }
+.icon-cell-box { width: 24px; height: 24px; }
+.icon-cell-text { font-size: 13px; }
+
+.ms-cell { font-size: 15px; }
+.mm-card { font-size: 20px; }
+.g2048-cell { font-size: 18px; }
+
+/* ============================================================
+   微调(2026-08-17): 玩家信息栏缩小 + 主页时间放大
+   ============================================================ */
+/* 放大2倍实验(2026-08-22): 56px -> 112px */
+.home-time { font-size: 112px; }
+.home-side { width: 200px; gap: 4px; }
+/* 玩家卡高度对齐时间底部: 时间 bottom(302+112=414) - 玩家卡 top(231) = 183px。
+   11 个子元素行高累加需 ≤ 183, 字号按此压缩;
+   justify-content:space-between 让剩余空间均匀分布, 视觉上仍铺满卡片。 */
+.home-player-card { padding: 2px 10px; gap: 0; min-height: 183px; justify-content: space-between; }
+.player-kicker { font-size: 12px; line-height: 13px; }
+.player-id { font-size: 30px; line-height: 31px; }
+.player-dept, .player-position { font-size: 22px; line-height: 23px; }
+.player-balance { font-size: 24px; line-height: 25px; }
+.player-shape { font-size: 22px; }
+.player-divider { margin: 0; height: 1px; }
+
+/* 微调2(2026-08-17): 删除重要消息计数、缩短任务进度条、玩家卡再右收 */
+#impCount { display: none !important; }
+/* 进度条与数字行长度 = 时间文本实际渲染宽度(112px 字号 "04:32" ≈ 319px) */
+.stat-task { max-width: none; }
+.stat-track { width: 319px; }
+.stat-fill { width: 100%; }
+/* 数字行与进度条同宽对齐, space-between 让数字(0/6)靠右与进度条右端对齐 */
+.stat-head { width: 319px; }
+/* 等级显示已移除(2026-08-17), 保留等级与平板联动数据逻辑 */
+.player-dept { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; letter-spacing: 0.03em; }
+
+/* 微调3(2026-08-17): 通讯红点作为覆盖层对齐图标右上角
+   (红点已移入 .side-glyph 内, 相对图标定位) */
+.nav-badge {
+  top: 0;
+  left: 100%;
+  margin-left: -6px;
+  min-width: 8px;
+  height: 8px;
+  line-height: 8px;
+  font-size: 6px;
+  padding: 0;
+}
+
+/* 微调4(2026-08-17): 侧边栏图标与文本放大 */
+.side-glyph { font-size: 32px; }
+.side-label { font-size: 16px; letter-spacing: 0.14em; }
+
+/* 微调5(2026-08-17): 侧边栏图标与文本间距缩小 */
+/* 难点: 盒间距已 1px, 但图标字符自带字体内留白(视觉 ~8px)。不能用负 margin(AUI 崩溃),
+   通过收紧字形行盒(line-height<font-size)与文本行高补偿视觉间距 */
+.side-item { gap: 0; }
+.side-glyph { font-size: 32px; line-height: 24px; }
+.side-label { font-size: 16px; line-height: 18px; letter-spacing: 0.14em; }
+
+/* ---- 实验报告 ---- */
+.report-submit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(112, 211, 255, 0.28);
+  background: rgba(8, 22, 34, 0.72);
+  border-radius: 14px;
+}
+.report-input { width: 100%; box-sizing: border-box; }
+.report-textarea { width: 100%; height: 170px; box-sizing: border-box; resize: none; }
+
+/* Final form/button safety: AUI input uses content-box by default; keep base and final overrides effective. */
+body.phone-body input,
+body.phone-body select,
+body.phone-body textarea,
+body.phone-body .modal-input,
+body.phone-body .report-input,
+body.phone-body .report-textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+body.phone-body button,
+body.phone-body .mini-btn,
+body.phone-body .head-btn {
+  white-space: nowrap;
+}
+.report-submit-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.research-inline-report { margin-bottom: 14px; }
+
+/* AUI 1.2.3 崩溃修复(2026-08-24): 手机页 grid 子元素严禁 removeChild ——
+   AUI 布局测量可能恰逢定时器/事件回调执行 removeChild 把 grid 项摘除,
+   测量时 parentElement 变 null → NPE(Size.shouldFillAvailableBlockWidth)。
+   多余格子一律用本类 display:none 隐藏(AUI grid flow 会过滤 display:none 子项,
+   不影响轨道计算)。此区块必须位于文件最末, 保证特异性压过各格子基础类。 */
+.gcell-off,
+.ms-cell.gcell-off, .mm-card.gcell-off, .g2048-cell.gcell-off,
+.icon-cell.gcell-off, .empty-tip.gcell-off, .game-card.gcell-off { display: none; }

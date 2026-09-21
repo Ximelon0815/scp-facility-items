@@ -1,0 +1,46 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"0": {
+			"animation_length": 3.1667,
+			"bones": {
+				"BlastDoor": {
+					"position": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"3.1667": {
+							"vector": [-38, 0, 0]
+						}
+					}
+				}
+			},
+			"sound_effects": {
+				"0.0": {
+					"effect": "bigdooropen2"
+				}
+			}
+		},
+		"1": {
+			"animation_length": 2.7083,
+			"bones": {
+				"BlastDoor": {
+					"position": {
+						"0.0": {
+							"vector": [-38, 0, 0]
+						},
+						"2.7083": {
+							"vector": [0, 0, 0]
+						}
+					}
+				}
+			},
+			"sound_effects": {
+				"0.0": {
+					"effect": "bigdoorclose2"
+				}
+			}
+		}
+	},
+	"geckolib_format_version": 2
+}

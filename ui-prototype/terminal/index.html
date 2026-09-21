@@ -1,0 +1,172 @@
+<!-- AUI-snow(1.2.x): 解析器自动合成 html/head/body; 无需 DOCTYPE。
+     设施终端按桌面浏览器宽度设计，使用 browser viewport 动态计算高度并填满当前Minecraft窗口。
+     非16:9窗口由TerminalApricityScreen先绘制不透明背景，绝不透出游戏画面。 -->
+<meta charset="UTF-8">
+<meta name="aui-viewport" content="mode=browser,width=1920,user-scalable=false">
+<meta name="aui-mouse-events" content="intercept">
+<title>设施终端</title>
+<link rel="stylesheet" href="terminal.css">
+<body class="ctl-body">
+<script>document.body.setAttribute("data-inline-probe", "1");</script>
+<!-- 游戏内 Java 桥接隐藏元素(预览版无害; Java TerminalBridgeClient 读写)。 -->
+<div id="terminalData" style="display:none"></div>
+<input id="terminalActionQueue" type="text" style="display:none" value="">
+
+<!-- ================= 主容器 ================= -->
+<div class="ctl">
+  <!-- 背景装饰(Control 粗野主义): 几何块/粗线/警示/编号, 不挡交互 -->
+  <div class="geo1"></div>
+  <div class="geo2"></div>
+  <div class="geo3"></div>
+  <div class="geo4"></div>
+  <div class="edge-hollow" aria-hidden="true">
+    <div class="edge-hollow-inner"></div>
+    <div class="edge-hollow-core"></div>
+    <div class="edge-hollow-mark"></div>
+  </div>
+  <div class="bar-h bar-h1"></div>
+  <div class="bar-h bar-h2"></div>
+
+  <div class="geo-ring"></div>
+  <div class="diag"></div>
+  <!-- 板块之间中央装饰 -->
+  <div class="mid-symbol"></div>
+  <div class="mid-vl mid-vl1"></div>
+  <div class="mid-vl mid-vl2"></div>
+  <div class="mid-hline"></div>
+
+  <div class="hdr">
+    <div class="title">设施终端<small>FACILITY MANAGEMENT TERMINAL</small></div>
+  </div>
+
+  <!-- 三栏不对称布局 -->
+  <div class="grid">
+    <!-- 左栏: 总部下发的设施任务 -->
+    <div class="col-l">
+      <div class="fund-block hq-card" data-open-win="daily">
+        <div class="f-lab">任务总数</div>
+        <div class="task-gauge"><span id="taskVal">00</span></div>
+        <div class="f-sub">点击打开总部任务窗口</div>
+      </div>
+      <div class="block home-notice-block">
+        <div class="b-title">设施公告 <span id="homeNoticeCount">00</span></div>
+        <div class="home-notice-list" id="homeNoticeList"><div class="empty-tip">暂无有效设施公告</div></div>
+      </div>
+    </div>
+
+    <!-- 中栏: 核心监控 -->
+    <div class="col-c">
+      <div class="kpi-strip">
+        <div class="kpi"><div class="k-lab">当前在线</div><div class="k-val"><span id="staffTotalVal">0</span><small>人</small></div><div class="k-sub" id="staffTotalSub">身份均由ID卡同步</div></div>
+        <div class="kpi red"><div class="k-lab">部门人数</div><div class="k-val">LIVE<small></small></div><div class="k-sub" id="deptCounts">未0 / 管0 / 研0 / 安0 / 后0 / 临0</div></div>
+        <div class="kpi"><div class="k-lab">异常物档案</div><div class="k-val"><span id="anomalyCountVal">0</span><small>项</small></div><div class="k-sub" id="anomalyCountSub">档案 0 · 失败 0</div></div>
+      </div>
+
+      <div class="feature-block">
+        <div class="feature-head"><span>终端功能</span><small>SELECT MODULE</small></div>
+        <div class="feature-grid">
+          <div class="feature-row">
+            <button class="feature-btn" data-open-win="daily"><span class="feature-ico" data-ico="clipboard-list"></span><b>总部任务</b><small>HQ TASK</small></button>
+            <button class="feature-btn" data-open-win="dept"><span class="feature-ico" data-ico="users-group"></span><b>部门调度</b><small>DISPATCH</small></button>
+            <button class="feature-btn" data-open-win="applications"><span class="feature-ico" data-ico="file-description"></span><b>审批换卡</b><small>APPLICATION</small></button>
+          </div>
+          <div class="feature-row">
+            <button class="feature-btn" data-open-win="management"><span class="feature-ico" data-ico="file-description"></span><b>文书中心</b><small>MANAGEMENT</small></button>
+            <button class="feature-btn" data-open-win="salary"><span class="feature-ico" data-ico="cash-banknote"></span><b>薪资结算</b><small>SALARY</small></button>
+            <button class="feature-btn" data-open-win="facility"><span class="feature-ico" data-ico="building-bank"></span><b>设施资金</b><small>FUND</small></button>
+          </div>
+          <div class="feature-row">
+            <button class="feature-btn" data-open-win="purchase"><span class="feature-ico" data-ico="package-import"></span><b>采购转账</b><small>PURCHASE</small></button>
+            <button class="feature-btn" data-open-win="research"><span class="feature-ico" data-ico="terminal-2"></span><b>科研部门</b><small>RESEARCH</small></button>
+            <button class="feature-btn" data-open-win="anomaly"><span class="feature-ico" data-ico="biohazard"></span><b>异常物</b><small>ANOMALY</small></button>
+          </div>
+          <div class="feature-row">
+            <button class="feature-btn" data-open-win="reports"><span class="feature-ico" data-ico="file-description"></span><b>实验报告</b><small>REPORTS</small></button>
+            <button class="feature-btn" data-open-win="staff"><span class="feature-ico" data-ico="id"></span><b>在线员工</b><small>STAFF</small></button>
+            <button class="feature-btn" data-open-win="notice"><span class="feature-ico" data-ico="speakerphone"></span><b>公告中心</b><small>NOTICE</small></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右栏: 资金 -->
+    <div class="col-r">
+      <div class="fund-block">
+        <div class="f-lab">设施资金</div>
+        <div class="f-val"><span class="yen">¥</span><span id="fundVal">0</span></div>
+        <div class="f-sub">设施全局账户</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 状态表下方空白区装饰(横向刻度带 + 编号) -->
+  <div class="mid-band" aria-hidden="true">
+    <span class="ruler-tick major"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span>
+    <span class="ruler-tick major"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span>
+    <span class="ruler-tick major"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span>
+    <span class="ruler-tick major"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span>
+    <span class="ruler-tick major"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span>
+    <span class="ruler-tick major"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span><span class="ruler-tick"></span>
+    <span class="ruler-tick major"></span>
+  </div>
+  <div class="mid-num">Λ-10-76</div>
+
+  <!-- 四功能大按钮 -->
+  <div class="mod-strip">
+    <button class="mod-btn window-launch" data-win="notice"><span class="m-idx" data-ico="speakerphone"></span><div class="m-name">公告下发</div><div class="m-desc">BROADCAST.msg</div></button>
+    <button class="mod-btn window-launch" data-win="dept"><span class="m-idx" data-ico="users-group"></span><div class="m-name">部门调度</div><div class="m-desc">DEPT_DISPATCH.sys</div></button>
+    <button class="mod-btn window-launch" data-win="anomaly"><span class="m-idx" data-ico="biohazard"></span><div class="m-name">异常物总览</div><div class="m-desc">CONTAINMENT.map</div></button>
+    <button class="mod-btn window-launch" data-win="facility"><span class="m-idx" data-ico="building-bank"></span><div class="m-name">设施资金</div><div class="m-desc">FACILITY_FUND.ledger</div></button>
+  </div>
+
+  <!-- 任务栏 -->
+  <div class="taskbar">
+    <button class="func-btn" id="btnFunc"><span class="func-ico" data-ico="grid-dots"></span> 功能</button>
+    <div class="taskbar-tasks" id="taskbarTasks">
+      <button class="task-btn" id="taskWin_daily" data-task-win="daily" style="display:none" title="总部设施任务"><span class="glyph svg-glyph" data-ico="clipboard-list"></span></button>
+      <button class="task-btn" id="taskWin_hqEditor" data-task-win="hqEditor" style="display:none" title="总部任务编辑器"><span class="glyph svg-glyph" data-ico="clipboard-list"></span></button>
+      <button class="task-btn" id="taskWin_dept" data-task-win="dept" style="display:none" title="部门调度台"><span class="glyph svg-glyph" data-ico="users-group"></span></button>
+      <button class="task-btn" id="taskWin_applications" data-task-win="applications" style="display:none" title="审批与换卡"><span class="glyph svg-glyph" data-ico="file-description"></span></button>
+      <button class="task-btn" id="taskWin_management" data-phase5-entry="management" data-task-win="management" style="display:none" title="文书中心"><span class="glyph svg-glyph" data-ico="file-description"></span></button>
+      <button class="task-btn" id="taskWin_salary" data-task-win="salary" style="display:none" title="薪资结算"><span class="glyph svg-glyph" data-ico="cash-banknote"></span></button>
+      <button class="task-btn" id="taskWin_facility" data-task-win="facility" style="display:none" title="设施资金"><span class="glyph svg-glyph" data-ico="building-bank"></span></button>
+      <button class="task-btn" id="taskWin_purchase" data-task-win="purchase" style="display:none" title="采购与资金"><span class="glyph svg-glyph" data-ico="package-import"></span></button>
+      <button class="task-btn" id="taskWin_staff" data-task-win="staff" style="display:none" title="在线员工"><span class="glyph svg-glyph" data-ico="id"></span></button>
+      <button class="task-btn" id="taskWin_notice" data-task-win="notice" style="display:none" title="公告中心"><span class="glyph svg-glyph" data-ico="speakerphone"></span></button>
+      <button class="task-btn" id="taskWin_noticeDetail" data-task-win="noticeDetail" style="display:none" title="公告详情"><span class="glyph svg-glyph" data-ico="speakerphone"></span></button>
+      <button class="task-btn" id="taskWin_research" data-task-win="research" style="display:none" title="科研部门"><span class="glyph svg-glyph" data-ico="terminal-2"></span></button>
+      <button class="task-btn" id="taskWin_anomaly" data-task-win="anomaly" style="display:none" title="异常物总览"><span class="glyph svg-glyph" data-ico="biohazard"></span></button>
+      <button class="task-btn" id="taskWin_reports" data-task-win="reports" style="display:none" title="实验报告"><span class="glyph svg-glyph" data-ico="file-description"></span></button>
+    </div>
+    <div class="clock-box" id="taskTime">--:--</div>
+    <div class="func-menu" id="funcMenu">
+      <div class="m-title">核心功能</div>
+      <div class="menu-item" data-win="daily"><span class="glyph svg-glyph" data-ico="clipboard-list"></span>总部任务</div>
+      <div class="menu-item" data-win="dept"><span class="glyph svg-glyph" data-ico="users-group"></span>部门调度</div>
+      <div class="menu-item" data-win="applications"><span class="glyph svg-glyph" data-ico="file-description"></span>审批/待换卡/审计</div>
+      <div class="menu-item" data-win="management"><span class="glyph svg-glyph" data-ico="file-description"></span>文书与公告中心</div>
+      <div class="menu-item" data-win="salary"><span class="glyph svg-glyph" data-ico="cash-banknote"></span>薪资结算</div>
+      <div class="menu-item" data-win="facility"><span class="glyph svg-glyph" data-ico="building-bank"></span>设施资金</div>
+      <div class="menu-sep"></div>
+      <div class="m-title">其他</div>
+      <div class="menu-item" data-win="purchase"><span class="glyph svg-glyph" data-ico="package-import"></span>部门采购需求</div>
+      <div class="menu-item" data-win="research"><span class="glyph svg-glyph" data-ico="microscope"></span>科研部门</div>
+      <div class="menu-item" data-win="anomaly"><span class="glyph svg-glyph" data-ico="biohazard"></span>异常物总览</div>
+      <div class="menu-item" data-win="reports"><span class="glyph svg-glyph" data-ico="file-description"></span>实验报告</div>
+      <div class="menu-item" data-win="staff"><span class="glyph svg-glyph" data-ico="id"></span>在线员工</div>
+      <div class="menu-item" data-win="notice"><span class="glyph svg-glyph" data-ico="speakerphone"></span>公告下发</div>
+      <div class="menu-sep"></div>
+      <div class="menu-item" id="miMinAll"><span class="glyph">−</span>全部最小化</div>
+      <div class="menu-item" id="miClose"><span class="glyph">⏻</span>关闭系统</div>
+    </div>
+  </div>
+</div>
+
+<div class="phase5-launchers"><button class="menu-item" data-win="security">安保</button><button class="menu-item" data-win="logistics">后勤</button><button class="menu-item" data-win="temporary">临聘</button></div>
+<!-- 窗口层(动态窗口挂载点) -->
+<div class="win-layer" id="winLayer"></div>
+<!-- 部门调度 Phase 2 标签容器由 terminal.js 挂载到现有 dept 窗口；不复制 terminalData 状态。 -->
+
+</body>
+<script src="terminal.js"></script>
+

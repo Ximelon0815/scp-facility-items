@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "melonstools:block/qte_redstone_emitter"
+    }
+  }
+}

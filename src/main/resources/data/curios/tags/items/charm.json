@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "melonstools:identity_card",
+    "melonstools:anomaly_magnetic_field_suppressor"
+  ]
+}

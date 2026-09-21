@@ -1,0 +1,71 @@
+# ============================================================
+#  scp-facility-items — .gitignore
+#  原则：只提交「能打包成 mod 的工程本体 + 文档」。
+#  下面每一段都写明排除了什么、为什么。
+# ============================================================
+
+# ---------- 构建产物 / Gradle 缓存 ----------
+/build/
+/.gradle/
+/bin/
+/out/
+/run/
+/run-data/
+/mcmodsrepo/
+*.class
+
+# ---------- 本地参考源码堆（约 1.86 GB / 10.8 万文件，全部为第三方） ----------
+# 内含 MCP-Reborn、LightmansCurrency / AUI 源码、其他 mod 的反编译代码等，
+# 仅供本地查阅，不随仓库分发。
+/源码库/
+
+# ---------- libs/ 下第三方 jar（不进仓库，见 libs/README.md） ----------
+/libs/*.jar
+/libs/*.zip
+
+# ---------- ui-prototype/：只保留 UI 的可编辑源码 ----------
+# 排除：diag_*.ps1 / check_*.ps1 诊断脚本、stacks/ 调试 dump、
+#       _backup_* 旧备份、style_* / *_standalone.html 预览稿、
+#       index.final.html（merge 产物）等。
+/ui-prototype/*
+!/ui-prototype/terminal/
+!/ui-prototype/phone/
+/ui-prototype/terminal/*
+!/ui-prototype/terminal/index.html
+!/ui-prototype/terminal/terminal.css
+!/ui-prototype/terminal/terminal.js
+!/ui-prototype/terminal/merge_terminal.ps1
+/ui-prototype/phone/*
+!/ui-prototype/phone/index.html
+!/ui-prototype/phone/phone.css
+!/ui-prototype/phone/phone.js
+!/ui-prototype/phone/ore.css
+!/ui-prototype/phone/ore-example.html
+
+# ---------- 开发脚手架 / 本地调试痕迹 ----------
+/.roo/
+/.vscode/
+/.docx-review/
+/.github/skills/
+/PLAN.md
+/TASK_SYSTEM_NOTES.md
+/snap_current.png
+/com/
+/check_png.mjs
+/sync_to_game.ps1
+/desktop.ini
+
+# ---------- IDE ----------
+/.idea/
+/.settings/
+/.metadata/
+/.classpath
+/.project
+*.iml
+*.ipr
+*.iws
+*.launch
+eclipse
+
+# ---------- Forge MDK ----------
+forge*changelog.txt

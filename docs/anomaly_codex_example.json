@@ -1,0 +1,18 @@
+{
+  "id": "anm_001",
+  "targetId": "melonstools:anomaly_001",
+  "displayName": "静默观察者",
+  "zone": "light",
+  "icon": "eye",
+  "summary": "该异常物会在无人注视时改变位置。",
+  "containment": [
+    "必须保持单独房间收容。",
+    "每 120 秒至少完成一次维护 QTE。",
+    "稳定度归零后进入 30 秒紧急抢救。"
+  ],
+  "researchStages": [
+    { "progress": 0, "text": "基础外观描述：无面人体模型。" },
+    { "progress": 40, "text": "行为记录：长时间无人观察时会改变位置。" },
+    { "progress": 80, "text": "维护建议：强光与持续观察可降低活跃度。" }
+  ]
+}

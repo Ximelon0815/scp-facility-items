@@ -1,0 +1,11 @@
+﻿{
+  "parent": "melonstools:custom/keycardreadernew",
+  "textures": {
+    "all": "melonstools:block/keycardreader",
+    "particle": "melonstools:block/keycardreader",
+    "0": "melonstools:block/5alliddle",
+    "1": "melonstools:block/keycardreader",
+    "2": "melonstools:block/buttonlcz"
+  },
+  "render_type": "cutout"
+}
