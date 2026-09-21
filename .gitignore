@@ -19,9 +19,10 @@
 # 仅供本地查阅，不随仓库分发。
 /源码库/
 
-# ---------- libs/ 下第三方 jar（不进仓库，见 libs/README.md） ----------
-/libs/*.jar
-/libs/*.zip
+# ---------- libs/：本地留档的第三方 jar，已不再被构建引用 ----------
+# build.gradle 的全部依赖改为从公开 maven 解析（Modrinth / Maven Central），
+# 仓库不再携带任何二进制；本目录只留本地测试用的 jar，整目录忽略。
+/libs/
 
 # ---------- ui-prototype/：只保留 UI 的可编辑源码 ----------
 # 排除：diag_*.ps1 / check_*.ps1 诊断脚本、stacks/ 调试 dump、

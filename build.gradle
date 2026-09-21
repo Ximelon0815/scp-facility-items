@@ -64,15 +64,13 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    exclusiveContent {
-        forRepository {
-            maven {
-                url "https://api.modrinth.com/maven"
-            }
-        }
-        filter {
-            includeGroup "maven.modrinth"
-        }
+    // 注意: 这里不要用 exclusiveContent 包裹 Modrinth —— exclusiveContent 会把
+    // `maven.modrinth` 这个 group 对其它所有仓库屏蔽, 连 ForgeGradle 自己的
+    // deobf 仓库一起屏蔽掉, 导致 fg.deobf 解析 `*_mapped_official_1.20.1` 时报
+    // "Could not find maven.modrinth:xxx"。普通 maven 声明即可。
+    maven {
+        name = 'Modrinth'
+        url = "https://api.modrinth.com/maven"
     }
 
     maven {
@@ -85,17 +83,15 @@ repositories {
 
     // JNA(jarJar 打包 + 编译)来自 mavenCentral
     mavenCentral()
-
-    flatDir {
-        dir 'libs'
-    }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    // ApricityUI (AUI) - HTML UI 框架,依赖 libs/apricityui-1.2.3.jar (与游戏运行版本一致)
-    implementation fg.deobf("blank:apricityui:1.2.3")
+    // ApricityUI (AUI) - HTML UI 框架。
+    // 依赖走 Modrinth 公开 maven, 不再需要 libs/ 下的本地 jar;
+    // 版本必须与游戏运行版本一致 (1.2.3)。
+    implementation fg.deobf("maven.modrinth:apricityui:1.2.3")
 
     // JNA - 原生 Windows 输入法(IME)管理, 用于手机/终端聊天框中文输入。
     // 注意(2026-08-24 服务端启动修复): 不再用 jarJar 打包 JNA —— Forge 1.20.1 的
@@ -104,17 +100,18 @@ dependencies {
     // 而 ImeCompat 仅 Dist.CLIENT 使用 JNA, 服务端根本不需要 → 只留 compileOnly(编译期引用),
     // 运行期由 ImeCompat 用 Class.forName("com.sun.jna.Native") 探测 classpath 是否已有 JNA
     // (大量客户端 mod/游戏 libraries 已带), 有则用、无则静默跳过, 主功能不依赖它。
-    compileOnly files('libs/jna-5.12.1.jar')
+    compileOnly "net.java.dev.jna:jna:5.12.1"
 
     // Curios API
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:5.9.1+1.20.1:api")
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:5.9.1+1.20.1")
 
-    // SecurityCraft from libs folder
-    implementation fg.deobf("blank:securitycraft-1.20.1:v1.10.2.1")
+    // SecurityCraft —— 硬前置(多个方块/方块实体直接 extends 其 OwnableBlock /
+    // LinkableBlockEntity), 无法做成软依赖; 依赖走 Modrinth 公开 maven。
+    implementation fg.deobf("maven.modrinth:security-craft:v1.10.2.1")
 
-    // Lightman's Currency
-    implementation fg.deobf("blank:lightmanscurrency-1.20.1:2.3.0.4g")
+    // Lightman's Currency —— 依赖走 Modrinth 公开 maven。
+    implementation fg.deobf("maven.modrinth:lightmans-currency:1.20.1-2.3.0.4g")
 
     // GeckoLib
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-1.20.1:4.4.4")

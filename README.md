@@ -59,15 +59,15 @@ src/main/resources/assets/apricityui/apricity/melonstools/terminal/index.html   
   换机器请改成自己的 JDK 17 路径（或删掉该行，交给 foojay toolchain 自动处理）。
 - 首次构建需联网下载 Forge MDK 与映射，耗时较长。
 
-### 2. 补齐本地依赖
+### 2. 依赖
 
-`libs/` 下的第三方 jar 不随本仓库分发，**必须先按 [`libs/README.md`](libs/README.md)
-下载补齐**，否则依赖解析阶段会直接失败。
+**无需任何手动准备**：全部依赖（包括 ApricityUI / SecurityCraft / Lightman's Currency）
+均由 Gradle 从公开 maven 自动解析，仓库不携带任何第三方二进制文件。
 
 ### 3. 命令
 
 ```bash
-./gradlew build          # 构建，产物在 build/libs/
+./gradlew build          # 构建，产物在 build/libs/melonstools-<version>.jar
 ./gradlew runClient      # 启动客户端（工作目录 run/）
 ./gradlew runServer      # 启动服务端（--nogui）
 ./gradlew runData        # 数据生成
@@ -85,22 +85,33 @@ src/main/resources/              资源：assets、data、META-INF/mods.toml
 src/test/java/                   骨架测试
 ui-prototype/                    UI 可编辑源码（HTML/CSS/JS）
 docs/                            示例数据
-libs/                            本地依赖（jar 不入库，见 README）
+libs/                            本地 jar 回退位（整目录已被 .gitignore 忽略）
 ```
 
 ---
 
 ## 依赖
 
-| 依赖 | 版本 | 获取方式 |
-|---|---|---|
-| Forge | 1.20.1-47.4.20 | maven.minecraftforge.net |
-| Curios API | 5.9.1+1.20.1 | maven.theillusivec4.top |
-| GeckoLib | 4.4.4 | GeckoLib Cloudsmith maven |
-| ApricityUI | 1.2.3 | 本地 jar |
-| SecurityCraft | v1.10.2.1 | 本地 jar |
-| Lightman's Currency | 2.3.0.4g | 本地 jar |
-| JNA | 5.12.1 | 本地 jar（`compileOnly`，仅客户端 IME） |
+全部走公开 maven，`./gradlew build` 开箱即用：
+
+| 依赖 | 坐标 | 仓库 | 性质 |
+|---|---|---|---|
+| Forge | `net.minecraftforge:forge:1.20.1-47.4.20` | maven.minecraftforge.net | 平台 |
+| ApricityUI | `maven.modrinth:apricityui:1.2.3` | Modrinth | **硬前置**（UI 屏幕继承其 `ApricityScreen`） |
+| SecurityCraft | `maven.modrinth:security-craft:v1.10.2.1` | Modrinth | **硬前置**（方块/方块实体继承其 `OwnableBlock` / `LinkableBlockEntity`） |
+| Lightman's Currency | `maven.modrinth:lightmans-currency:1.20.1-2.3.0.4g` | Modrinth | 编译期依赖 |
+| Curios API | `top.theillusivec4.curios:curios-forge:5.9.1+1.20.1` | maven.theillusivec4.top | `compileOnly` + `runtimeOnly` |
+| GeckoLib | `software.bernie.geckolib:geckolib-forge-1.20.1:4.4.4` | GeckoLib Cloudsmith | 编译期依赖 |
+| JNA | `net.java.dev.jna:jna:5.12.1` | Maven Central | `compileOnly`（仅客户端 IME） |
+
+> **构建期坑位备忘**：Modrinth 仓库**不要**用 `exclusiveContent` 包裹。
+> `exclusiveContent` 会把 `maven.modrinth` 组对其它所有仓库屏蔽，连 ForgeGradle 自己的
+> deobf 仓库一起屏蔽，导致 `fg.deobf` 解析 `*_mapped_official_1.20.1` 时报
+> `Could not find maven.modrinth:xxx`。用普通 `maven { url "https://api.modrinth.com/maven" }` 即可。
+
+> 若 Modrinth maven 不可达，可在 `libs/` 放同名 jar 并临时改回
+> `flatDir { dir 'libs' }` + `fg.deobf("blank:<name>:<version>")` 作为本地回退。
+> `libs/` 已在 `.gitignore` 中整目录忽略。
 
 ---
 
